@@ -44,7 +44,7 @@ jobs:
             pip install -r requirements-dev.txt
             pip install .
             cd test
-            pytest -v --cov awsutils --cov-report term-missing
+            pytest -v --cov boto3utils --cov-report term-missing
       - save_cache:
           key: v1-dependencies37-{{ checksum "requirements.txt"}}
           paths:
@@ -67,7 +67,7 @@ jobs:
             ssh-keyscan github.com >> ~/.ssh/known_hosts
             pip install twine
             python setup.py sdist
-            VERSION=`awk -F\' '{print $2,$4}' awsutils/version.py`
+            VERSION=`awk -F\' '{print $2,$4}' boto3utils/version.py`
             git tag $VERSION
             git push origin $VERSION
             twine upload --username "${PYPI_USER}" --password "${PYPI_PASS}" dist/*
