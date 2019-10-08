@@ -58,7 +58,7 @@ def upload(filename, uri, public=False, extra={}):
     s3_uri = urlparse(uri)
     uri_out = 's3://%s' % op.join(s3_uri['bucket'], s3_uri['key'])
     if public:
-        extra['acl'] = 'public-read'
+        extra['ACL'] = 'public-read'
     with open(filename, 'rb') as data:
         s3.upload_fileobj(data, s3_uri['bucket'], s3_uri['key'], ExtraArgs=extra)
     return uri_out
@@ -108,8 +108,8 @@ def find(url, suffix=''):
 
     # If the prefix is a single string (not a tuple of strings), we can
     # do the filtering directly in the S3 API.
-    if isinstance(parts['prefix'], str):
-        kwargs['Prefix'] = parts['prefix']
+    if isinstance(parts['key'], str):
+        kwargs['Prefix'] = parts['key']
 
     while True:
         # The S3 API response is a large blob of metadata.
@@ -122,7 +122,7 @@ def find(url, suffix=''):
 
         for obj in contents:
             key = obj['Key']
-            if key.startswith(parts['prefix']) and key.endswith(suffix):
+            if key.startswith(parts['key']) and key.endswith(suffix):
                 yield obj['Key']
 
         # The S3 API is paginated, returning up to 1000 keys at a time.
