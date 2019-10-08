@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v0.1.0] - 2019-07-20
+## [v0.0.1] - 2019-10-08
 
 Initial Release
 
-[Unreleased]: https://github.com/sat-utils/sat-stac/compare/master...develop
-[v0.1.0]: https://github.com/matthewhanson/aws-utils/tree/0.1.0
+[Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/master...develop
+[v0.0.1]: https://github.com/matthewhanson/boto3-utils/tree/0.1.0
