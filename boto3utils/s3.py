@@ -9,10 +9,11 @@ from datetime import datetime, timedelta
 from dateutil.parser import parse
 from gzip import GzipFile
 from io import BytesIO
-from os import makedirs
+from os import makedirs, getenv
 
 logger = logging.getLogger(__name__)
 
+# s3 client
 s3 = boto3.client('s3')
 
 
@@ -33,17 +34,10 @@ def urlparse(url):
     }
 
 
-def s3url_to_https(url):
-    """ Convert an s3 URL to an s3 https URL """
+def s3_to_https(url, region=getenv('AWS_REGION', getenv('AWS_DEFAULT_REGION', 'us-east-1'))):
+    """ Convert an s3 URL to an s3 https URL """    
     parts = urlparse(url)
-    return 'https://'
-
-
-def https_to_s3url(url):
-    """ Convert an s3 https URL to an s3 URL """
-    parts = url.split('/')
-    return 's3://'
-
+    return 'https://%s.s3.%s.amazonaws.com/%s' % (parts['bucket'], region, parts['key'])
 
 
 def exists(url):
@@ -71,14 +65,16 @@ def upload(filename, uri, public=False, extra={}):
 
 
 def download(uri, path=''):
-    """ Download object from S3 """
+    """
+    Download object from S3
+    :param uri: URI of object to download
+    :param path: Output path
+    """
     s3_uri = urlparse(uri)
     fout = op.join(path, s3_uri['filename'])
     logger.debug("Downloading %s as %s" % (uri, fout))
     if path != '':
-        os.makedirs(path, exist_ok=True)
-
-    s3 = boto3.client('s3')
+        makedirs(path, exist_ok=True)
 
     with open(fout, 'wb') as f:
         s3.download_fileobj(
@@ -89,28 +85,36 @@ def download(uri, path=''):
     return fout
 
 
-def get_matching_s3_objects(bucket, prefix='', suffix=''):
+def read_json(url):
+    """
+    Download object from S3 as JSON
+    """
+    parts = urlparse(url)
+    response = s3.get_object(Bucket=parts['bucket'], Key=parts['key'])
+    body = response['Body'].read()
+    if op.splitext(parts['key'])[1] == '.gz':
+        body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
+    return json.loads(body.decode('utf-8'))
+
+
+def find(url, suffix=''):
     """
     Generate objects in an S3 bucket.
-    :param bucket: Name of the S3 bucket.
-    :param prefix: Only fetch objects whose key starts with
-        this prefix (optional).
-    :param suffix: Only fetch objects whose keys end with
-        this suffix (optional).
+    :param url: The beginning part of the URL to match (bucket + optional prefix)
+    :param suffix: Only fetch objects whose keys end with this suffix.
     """
-    kwargs = {'Bucket': bucket}
+    parts = urlparse(url)
+    kwargs = {'Bucket': parts['bucket']}
 
     # If the prefix is a single string (not a tuple of strings), we can
     # do the filtering directly in the S3 API.
-    if isinstance(prefix, str):
-        kwargs['Prefix'] = prefix
+    if isinstance(parts['prefix'], str):
+        kwargs['Prefix'] = parts['prefix']
 
     while True:
-
         # The S3 API response is a large blob of metadata.
         # 'Contents' contains information about the listed objects.
         resp = s3.list_objects_v2(**kwargs)
-
         try:
             contents = resp['Contents']
         except KeyError:
@@ -118,8 +122,8 @@ def get_matching_s3_objects(bucket, prefix='', suffix=''):
 
         for obj in contents:
             key = obj['Key']
-            if key.startswith(prefix) and key.endswith(suffix):
-                yield obj
+            if key.startswith(parts['prefix']) and key.endswith(suffix):
+                yield obj['Key']
 
         # The S3 API is paginated, returning up to 1000 keys at a time.
         # Pass the continuation token into the next response, until we
@@ -128,67 +132,3 @@ def get_matching_s3_objects(bucket, prefix='', suffix=''):
             kwargs['ContinuationToken'] = resp['NextContinuationToken']
         except KeyError:
             break
-
-
-def get_matching_s3_keys(bucket, prefix='', suffix=''):
-    """
-    Generate the keys in an S3 bucket.
-    :param bucket: Name of the S3 bucket.
-    :param prefix: Only fetch keys that start with this prefix (optional).
-    :param suffix: Only fetch keys that end with this suffix (optional).
-    """
-    for obj in get_matching_s3_objects(bucket, prefix, suffix):
-        yield obj['Key']
-
-
-def read_from_s3(bucket, key):
-    """ Download object from S3 as JSON """
-    s3 = boto3.client('s3')
-    response = s3.get_object(Bucket=bucket, Key=key)
-    body = response['Body'].read()
-    if op.splitext(key)[1] == '.gz':
-        body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
-    return body.decode('utf-8')
-
-
-def read_inventory(filename):
-    """ Create generator from s3 inventory file """
-    with open(filename) as f:
-        line = f.readline()
-        if 'datetime' not in line:
-            parts = line.split(',')
-            yield {
-                'datetime': parse(parts[0]),
-                'path': parts[1].strip('\n')
-            }
-        for line in f.readlines():
-            parts = line.split(',')
-            yield {
-                'datetime': parse(parts[0]),
-                'path': parts[1].strip('\n')
-            }
-
-
-def latest_inventory():
-    """ Return generator function for list of scenes """
-    s3 = boto3.client('s3')
-    # get latest file
-    today = datetime.now()
-    key = None
-    for dt in [today, today - timedelta(1)]:
-        prefix = op.join(SETTINGS['inv_key'], dt.strftime('%Y-%m-%d'))
-        keys = [k for k in get_matching_s3_keys(SETTINGS['inv_bucket'], prefix=prefix, suffix='manifest.json')]
-        if len(keys) == 1:
-            key = keys[0]
-            break
-    if key:
-        manifest = json.loads(read_from_s3(SETTINGS['inv_bucket'], key))
-        for f in manifest.get('files', []):
-            inv = read_from_s3(SETTINGS['inv_bucket'], f['key']).split('\n')
-            inv = [i.replace('"', '').split(',') for i in inv if 'tileInfo.json' in i]
-            for info in inv:
-                yield {
-                    'datetime': parse(info[3]),
-                    'path': info[1]
-                }
-
