@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 sfn = boto3.client('stepfunctions', config=Config(read_timeout=70))
 
 
-def run_activity(process, arn):
+def run_activity(process, arn, **kwargs):
     """ Run an activity around the process function provided """
     while True:
         logger.info('Querying for task')
@@ -30,7 +30,7 @@ def run_activity(process, arn):
             payload = task.get('input', '{}')
             logger.info('Payload: %s' % payload)
             # run process function with payload as kwargs
-            output = process(**json.loads(payload))
+            output = process(**json.loads(payload, **kwargs)
             # Send task success
             sfn.send_task_success(taskToken=token, output=json.dumps(output))
         except Exception as e:
