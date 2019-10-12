@@ -32,7 +32,7 @@ def run_activity(process, arn):
             # run process function with payload as kwargs
             output = process(**json.loads(payload))
             # Send task success
-            sfn.send_task_success(taskToken=token, output=output)
+            sfn.send_task_success(taskToken=token, output=json.dumps(output))
         except Exception as e:
             err = str(e)
             tb = format_exc()
