@@ -30,7 +30,7 @@ def run_activity(process, arn, **kwargs):
             payload = task.get('input', '{}')
             logger.info('Payload: %s' % payload)
             # run process function with payload as kwargs
-            output = process(**json.loads(payload), **kwargs)
+            output = process(json.loads(payload), **kwargs)
             # Send task success
             sfn.send_task_success(taskToken=token, output=json.dumps(output))
         except Exception as e:
