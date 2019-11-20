@@ -99,6 +99,7 @@ def read_json(url):
     return json.loads(read(url))
 
 
+# function derived from https://alexwlchan.net/2018/01/listing-s3-keys-redux/
 def find(url, suffix=''):
     """
     Generate objects in an S3 bucket.
@@ -149,18 +150,21 @@ def latest_inventory(url, suffix=None):
         if len(keys) == 1:
             manifest_key = keys[0]
             break
+    # read through latest manifest looking for matches
     if manifest_key:
         _url = 's3://%s/%s' % (parts['bucket'], manifest_key)
         manifest = read_json(_url)
+        # get file schema
+        keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
+
         for f in manifest.get('files', []):
             _url = 's3://%s/%s' % (parts['bucket'], f['key'])
             inv = read(_url).split('\n')
             for line in inv:
-                info = line.replace('"', '').split(',')
-                dt = datetime.strptime(info[3], "%Y-%m-%dT%H:%M:%S.%fZ")
-                url = 's3://%s/%s' % (parts['bucket'], info[1])    
-                if suffix is None or info[1].endswith(suffix):   
-                    yield {
-                        'datetime': dt,
-                        'url': url             
-                    }
+                info = {keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))}
+                if suffix is None or info['Key'].endswith(suffix):
+                    if 'LastModifiedDate' in keys:
+                        info['updated'] = datetime.strptime(info['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
+                    if 'Bucket' in keys and 'Key' in keys:
+                        info['url'] = 's3://%s/%s' % (info['Bucket'], info['Key']) 
+                    yield info

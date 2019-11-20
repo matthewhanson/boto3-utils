@@ -81,15 +81,14 @@ def test_find(s3mock):
     assert('test.json' in urls)
 
 def test_latest_inventory():
-    from pdb import set_trace
     url = 's3://sentinel-inventory/sentinel-s1-l1c/sentinel-s1-l1c-inventory'
     suffix = 'productInfo.json'
     for f in s3.latest_inventory(url, suffix=suffix):
-        hours = (datetime.today() - f['datetime']).seconds // 3600
+        hours = (datetime.today() - f['updated']).seconds // 3600
         assert(hours < 24)
         assert(f['url'].endswith(suffix))
         break
     for f in s3.latest_inventory(url):
-        hours = (datetime.today() - f['datetime']).seconds // 3600
+        hours = (datetime.today() - f['updated']).seconds // 3600
         assert(hours < 24)
         break
