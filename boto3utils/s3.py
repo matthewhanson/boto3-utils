@@ -163,8 +163,6 @@ def latest_inventory(url, suffix=None):
             for line in inv:
                 info = {keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))}
                 if suffix is None or info['Key'].endswith(suffix):
-                    if 'LastModifiedDate' in keys:
-                        info['updated'] = datetime.strptime(info['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
                     if 'Bucket' in keys and 'Key' in keys:
                         info['url'] = 's3://%s/%s' % (info['Bucket'], info['Key']) 
                     yield info

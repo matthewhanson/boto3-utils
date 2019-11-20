@@ -84,11 +84,13 @@ def test_latest_inventory():
     url = 's3://sentinel-inventory/sentinel-s1-l1c/sentinel-s1-l1c-inventory'
     suffix = 'productInfo.json'
     for f in s3.latest_inventory(url, suffix=suffix):
-        hours = (datetime.today() - f['updated']).seconds // 3600
+        dt = datetime.strptime(f['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        hours = (datetime.today() - dt).seconds // 3600
         assert(hours < 24)
         assert(f['url'].endswith(suffix))
         break
     for f in s3.latest_inventory(url):
-        hours = (datetime.today() - f['updated']).seconds // 3600
+        dt = datetime.strptime(f['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        hours = (datetime.today() - dt).seconds // 3600
         assert(hours < 24)
         break
