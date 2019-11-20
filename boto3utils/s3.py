@@ -6,7 +6,6 @@ import os.path as op
 
 from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
-from dateutil.parser import parse
 from gzip import GzipFile
 from io import BytesIO
 from os import makedirs, getenv
@@ -85,16 +84,19 @@ def download(uri, path=''):
     return fout
 
 
-def read_json(url):
-    """
-    Download object from S3 as JSON
-    """
+def read(url):
+    """ Read object from s3 """
     parts = urlparse(url)
     response = s3.get_object(Bucket=parts['bucket'], Key=parts['key'])
     body = response['Body'].read()
     if op.splitext(parts['key'])[1] == '.gz':
         body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
-    return json.loads(body.decode('utf-8'))
+    return body.decode('utf-8')
+
+
+def read_json(url):
+    """ Download object from S3 as JSON """
+    return json.loads(read(url))
 
 
 def find(url, suffix=''):
@@ -132,3 +134,33 @@ def find(url, suffix=''):
             kwargs['ContinuationToken'] = resp['NextContinuationToken']
         except KeyError:
             break
+
+
+def latest_inventory(url, suffix=None):
+    """ Return generator function for for objects in Bucket with suffix (all files if suffix=None) """
+    parts = urlparse(url)
+    # get latest manifest file
+    today = datetime.now()
+    manifest_key = None
+    for dt in [today, today - timedelta(1)]:
+        prefix = op.join(parts['key'], dt.strftime('%Y-%m-%d'))
+        _url = 's3://%s/%s' % (parts['bucket'], prefix)
+        keys = [k for k in find(_url, suffix='manifest.json')]
+        if len(keys) == 1:
+            manifest_key = keys[0]
+            break
+    if manifest_key:
+        _url = 's3://%s/%s' % (parts['bucket'], manifest_key)
+        manifest = read_json(_url)
+        for f in manifest.get('files', []):
+            _url = 's3://%s/%s' % (parts['bucket'], f['key'])
+            inv = read(_url).split('\n')
+            for line in inv:
+                info = line.replace('"', '').split(',')
+                dt = datetime.strptime(info[3], "%Y-%m-%dT%H:%M:%S.%fZ")
+                url = 's3://%s/%s' % (parts['bucket'], info[1])    
+                if suffix is None or info[1].endswith(suffix):   
+                    yield {
+                        'datetime': dt,
+                        'url': url             
+                    }
