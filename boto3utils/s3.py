@@ -137,8 +137,8 @@ def find(url, suffix=''):
             break
 
 
-def latest_inventory(url, suffix=None):
-    """ Return generator function for for objects in Bucket with suffix (all files if suffix=None) """
+def latest_inventory(url, suffix=None, start_date=None, end_date=None, datetime_key='LastModifiedDate'):
+    """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
     parts = urlparse(url)
     # get latest manifest file
     today = datetime.now()
@@ -162,6 +162,12 @@ def latest_inventory(url, suffix=None):
             inv = read(_url).split('\n')
             for line in inv:
                 info = {keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))}
+                if 'Key' not in info:
+                    continue
+                # skip to next if last modified date not between start_date and end_date
+                dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
+                if (start_date is not None and dt < start_date) or (end_date is not None and dt > end_date):
+                    continue
                 if suffix is None or info['Key'].endswith(suffix):
                     if 'Bucket' in keys and 'Key' in keys:
                         info['url'] = 's3://%s/%s' % (info['Bucket'], info['Key']) 
