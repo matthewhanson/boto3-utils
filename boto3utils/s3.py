@@ -1,6 +1,9 @@
 import boto3
 import json
+import hashlib
+import hmac
 import logging
+import os
 
 import os.path as op
 
@@ -137,15 +140,15 @@ def find(url, suffix=''):
             break
 
 
-def latest_inventory(url, suffix=None, start_date=None, end_date=None, datetime_key='LastModifiedDate'):
+def latest_inventory(url, prefix=None, suffix=None, start_date=None, end_date=None, datetime_key='LastModifiedDate'):
     """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
     parts = urlparse(url)
     # get latest manifest file
     today = datetime.now()
     manifest_key = None
     for dt in [today, today - timedelta(1)]:
-        prefix = op.join(parts['key'], dt.strftime('%Y-%m-%d'))
-        _url = 's3://%s/%s' % (parts['bucket'], prefix)
+        _key = op.join(parts['key'], dt.strftime('%Y-%m-%d'))
+        _url = 's3://%s/%s' % (parts['bucket'], _key)
         keys = [k for k in find(_url, suffix='manifest.json')]
         if len(keys) == 1:
             manifest_key = keys[0]
@@ -157,10 +160,15 @@ def latest_inventory(url, suffix=None, start_date=None, end_date=None, datetime_
         # get file schema
         keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
 
+        logger.info('Getting latest inventory from %s' % url)
+        counter = 0
         for f in manifest.get('files', []):
             _url = 's3://%s/%s' % (parts['bucket'], f['key'])
             inv = read(_url).split('\n')
             for line in inv:
+                counter += 1
+                if counter % 100000 == 0:
+                    logger.debug('%s: Scanned %s records' % (datetime.now(), str(counter)))                
                 info = {keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))}
                 if 'Key' not in info:
                     continue
@@ -168,7 +176,87 @@ def latest_inventory(url, suffix=None, start_date=None, end_date=None, datetime_
                 dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
                 if (start_date is not None and dt < start_date) or (end_date is not None and dt > end_date):
                     continue
+                if prefix is not None:
+                    # if path doesn't match provided prefix skip to next record
+                    if info['Key'][:len(prefix)] != prefix:
+                        continue
                 if suffix is None or info['Key'].endswith(suffix):
                     if 'Bucket' in keys and 'Key' in keys:
                         info['url'] = 's3://%s/%s' % (info['Bucket'], info['Key']) 
                     yield info
+
+
+def get_presigned_url(url, aws_region=None,
+                      rtype='GET', public=False, requester_pays=False, content_type=None):
+    """ Get presigned URL """
+    access_key = os.environ.get('AWS_BUCKET_ACCESS_KEY_ID', os.environ.get('AWS_ACCESS_KEY_ID'))
+    secret_key = os.environ.get('AWS_BUCKET_SECRET_ACCESS_KEY', os.environ.get('AWS_SECRET_ACCESS_KEY'))
+    region = os.environ.get('AWS_BUCKET_REGION', os.environ.get('AWS_REGION', 'eu-central-1'))
+    if aws_region is not None:
+        region = aws_region
+    if access_key is None or secret_key is None:
+        # if credentials not provided, just try to download without signed URL
+        logger.debug('Not using signed URL for %s' % url)
+        return url, None
+
+    parts = urlparse(url)
+    bucket = parts['bucket']
+    key = parts['key']
+
+    service = 's3'
+    host = '%s.%s.amazonaws.com' % (bucket, service)
+    request_parameters = ''
+
+    # Key derivation functions. See:
+    # http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
+    def sign(key, msg):
+        return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
+
+    def getSignatureKey(key, dateStamp, regionName, serviceName):
+        kDate = sign(('AWS4' + key).encode('utf-8'), dateStamp)
+        kRegion = sign(kDate, regionName)
+        kService = sign(kRegion, serviceName)
+        kSigning = sign(kService, 'aws4_request')
+        return kSigning
+ 
+    # Create a date for headers and the credential string
+    t = datetime.utcnow()
+    amzdate = t.strftime('%Y%m%dT%H%M%SZ')
+    datestamp = t.strftime('%Y%m%d') # Date w/o time, used in credential scope
+
+    # create signed request and headers
+    canonical_uri = '/' + key
+    canonical_querystring = request_parameters
+
+    payload_hash = 'UNSIGNED-PAYLOAD'
+    headers = {
+        'host': host,
+        'x-amz-content-sha256': payload_hash,
+        'x-amz-date': amzdate
+    }
+
+    if requester_pays:
+        headers['x-amz-request-payer'] = 'requester'
+    if public:
+        headers['x-amz-acl'] = 'public-read'
+    if os.environ.get('AWS_SESSION_TOKEN') and 'AWS_BUCKET_ACCESS_KEY_ID' not in os.environ:
+        headers['x-amz-security-token'] = os.environ.get('AWS_SESSION_TOKEN')
+    canonical_headers = '\n'.join('%s:%s' % (key, headers[key]) for key in sorted(headers)) + '\n'
+    signed_headers = ';'.join(sorted(headers.keys()))
+
+    canonical_request = '%s\n%s\n%s\n%s\n%s\n%s' % (
+        rtype, canonical_uri, canonical_querystring, canonical_headers, signed_headers, payload_hash
+    )
+    algorithm = 'AWS4-HMAC-SHA256'
+    credential_scope = datestamp + '/' + region + '/' + service + '/' + 'aws4_request'
+    string_to_sign = algorithm + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()
+    signing_key = getSignatureKey(secret_key, datestamp, region, service)
+    signature = hmac.new(signing_key, string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
+    authorization_header = algorithm + ' ' + 'Credential=' + access_key + '/' + credential_scope + ', ' \
+        + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
+
+    request_url = 'https://%s%s' % (host, canonical_uri)
+    headers['Authorization'] = authorization_header
+    if content_type is not None:
+        headers['content-type'] = content_type
+    return request_url, headers
