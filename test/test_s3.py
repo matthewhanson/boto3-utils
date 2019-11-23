@@ -2,6 +2,7 @@ import boto3
 import os
 import pytest
 
+from datetime import datetime
 # this must be imported before any boto3 module
 from moto import mock_s3
 
@@ -78,3 +79,18 @@ def test_find(s3mock):
     urls = list(s3.find('s3://%s/test' % BUCKET))
     assert(len(urls) > 0)
     assert('test.json' in urls)
+
+def test_latest_inventory():
+    url = 's3://sentinel-inventory/sentinel-s1-l1c/sentinel-s1-l1c-inventory'
+    suffix = 'productInfo.json'
+    for f in s3.latest_inventory(url, suffix=suffix):
+        dt = datetime.strptime(f['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        hours = (datetime.today() - dt).seconds // 3600
+        assert(hours < 24)
+        assert(f['url'].endswith(suffix))
+        break
+    for f in s3.latest_inventory(url):
+        dt = datetime.strptime(f['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        hours = (datetime.today() - dt).seconds // 3600
+        assert(hours < 24)
+        break
