@@ -129,7 +129,7 @@ def find(url, suffix=''):
         for obj in contents:
             key = obj['Key']
             if key.startswith(parts['key']) and key.endswith(suffix):
-                yield obj['Key']
+                yield f"s3://{parts['bucket']}/{obj['Key']}"
 
         # The S3 API is paginated, returning up to 1000 keys at a time.
         # Pass the continuation token into the next response, until we

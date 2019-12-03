@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- s3.find now returns complete s3 URL for each found object, not just the key
+
 ## [v0.0.3] = 2019-11-22
 
 ### Added
