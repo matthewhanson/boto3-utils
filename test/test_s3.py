@@ -50,46 +50,47 @@ def test_s3_to_https():
     assert(url == 'https://bucket.s3.us-west-2.amazonaws.com/prefix/filename')
     
 def test_exists(s3mock):
-    exists = s3.exists('s3://%s/%s' % (BUCKET, 'keymaster'))
+    exists = s3().exists('s3://%s/%s' % (BUCKET, 'keymaster'))
     assert(exists is False)
-    exists = s3.exists('s3://%s/%s' % (BUCKET, KEY))
+    exists = s3().exists('s3://%s/%s' % (BUCKET, KEY))
     assert(exists)
 
 def test_exists_invalid():
     with pytest.raises(Exception):
-        s3.exists('invalid')
+        s3().exists('invalid')
 
 def test_upload_download(s3mock):
     url = 's3://%s/mytestfile' % BUCKET
-    s3.upload(__file__, url, public=True)
-    exists = s3.exists(url)
+    s3().upload(__file__, url, public=True)
+    exists = s3().exists(url)
     assert(exists)
     path = os.path.join(testpath, 'test_s3/test_upload_download')
-    fname = s3.download(url, path)
+    fname = s3().download(url, path)
     assert(os.path.exists(fname))
     assert(os.path.join(path, os.path.basename(url)) == fname)
     rmtree(path)
 
 def test_read_json(s3mock):
     url = 's3://%s/test.json' % BUCKET
-    out = s3.read_json(url)
+    out = s3().read_json(url)
     assert(out['field'] == 'value')
 
 def test_find(s3mock):
-    urls = list(s3.find('s3://%s/test' % BUCKET))
+    url = 's3://%s/test' % BUCKET
+    urls = list(s3().find(url))
     assert(len(urls) > 0)
-    assert('test.json' in urls)
+    assert(url + '.json' in urls)
 
 def test_latest_inventory():
     url = 's3://sentinel-inventory/sentinel-s1-l1c/sentinel-s1-l1c-inventory'
     suffix = 'productInfo.json'
-    for f in s3.latest_inventory(url, suffix=suffix):
+    for f in s3().latest_inventory(url, suffix=suffix):
         dt = datetime.strptime(f['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
         hours = (datetime.today() - dt).seconds // 3600
         assert(hours < 24)
         assert(f['url'].endswith(suffix))
         break
-    for f in s3.latest_inventory(url):
+    for f in s3().latest_inventory(url):
         dt = datetime.strptime(f['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
         hours = (datetime.today() - dt).seconds // 3600
         assert(hours < 24)
