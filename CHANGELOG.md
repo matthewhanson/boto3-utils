@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Changed
-- The s3 module is now a class. The class init function accepts a boto3 Session
+- The s3 and stepfunction modules are now a class, and the init function accepts a boto3 Session. If not provided a default session is created.
 - s3.s3_to_https upload now accepts a `http_url` keyword. If set to True it will return the https URL instead of the S3 URL
 
 ### Changed
