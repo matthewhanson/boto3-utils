@@ -149,18 +149,17 @@ class s3(object):
         parts = self.urlparse(url)
         # get latest manifest file
         today = datetime.now()
-        manifest_key = None
+        manifest_url = None
         for dt in [today, today - timedelta(1)]:
             _key = op.join(parts['key'], dt.strftime('%Y-%m-%d'))
             _url = 's3://%s/%s' % (parts['bucket'], _key)
-            keys = [k for k in self.find(_url, suffix='manifest.json')]
-            if len(keys) == 1:
-                manifest_key = keys[0]
+            manifests = [k for k in self.find(_url, suffix='manifest.json')]
+            if len(manifests) == 1:
+                manifest_url = manifests[0]
                 break
         # read through latest manifest looking for matches
-        if manifest_key:
-            _url = 's3://%s/%s' % (parts['bucket'], manifest_key)
-            manifest = self.read_json(_url)
+        if manifest_url:
+            manifest = self.read_json(manifest_url)
             # get file schema
             keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
 
