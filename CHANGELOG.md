@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - The s3 module is now a class. The class init function accepts a boto3 Session
+- s3.s3_to_https upload now accepts a `http_url` keyword. If set to True it will return the https URL instead of the S3 URL
 
 ### Changed
 - s3.find now returns complete s3 URL for each found object, not just the key

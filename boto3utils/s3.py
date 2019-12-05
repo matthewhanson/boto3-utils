@@ -58,16 +58,20 @@ class s3(object):
                 raise
             return False
 
-    def upload(self, filename, uri, public=False, extra={}):
+    def upload(self, filename, url, public=False, extra={}, http_url=False):
         """ Upload object to S3 uri (bucket + prefix), keeping same base filename """
-        logger.debug("Uploading %s to %s" % (filename, uri))
-        s3_uri = self.urlparse(uri)
-        uri_out = 's3://%s' % op.join(s3_uri['bucket'], s3_uri['key'])
+        logger.debug("Uploading %s to %s" % (filename, url))
+        parts = self.urlparse(url)
+        url_out = 's3://%s' % op.join(parts['bucket'], parts['key'])
         if public:
             extra['ACL'] = 'public-read'
         with open(filename, 'rb') as data:
-            self.s3.upload_fileobj(data, s3_uri['bucket'], s3_uri['key'], ExtraArgs=extra)
-        return uri_out
+            self.s3.upload_fileobj(data, parts['bucket'], parts['key'], ExtraArgs=extra)
+        if http_url:
+            region = self.s3.get_bucket_location(Bucket=parts['bucket'])
+            return self.s3_to_https(url_out, region)
+        else:
+            return url_out
 
     def download(self, uri, path=''):
         """
