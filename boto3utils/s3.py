@@ -68,7 +68,7 @@ class s3(object):
         with open(filename, 'rb') as data:
             self.s3.upload_fileobj(data, parts['bucket'], parts['key'], ExtraArgs=extra)
         if http_url:
-            region = self.s3.get_bucket_location(Bucket=parts['bucket'])
+            region = self.s3.get_bucket_location(Bucket=parts['bucket'])['LocationConstraint']
             return self.s3_to_https(url_out, region)
         else:
             return url_out
