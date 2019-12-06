@@ -73,7 +73,7 @@ class s3(object):
         else:
             return url_out
 
-    def download(self, uri, path=''):
+    def download(self, uri, path='', requester_pays=False):
         """
         Download object from S3
         :param uri: URI of object to download
@@ -85,12 +85,14 @@ class s3(object):
         if path != '':
             makedirs(path, exist_ok=True)
 
+        if requester_pays:
+            response = self.s3.get_object(Bucket=s3_uri['bucket'], Key=s3_uri['key'],
+                                          RequestPayer='requester')
+        else:
+            response = self.s3.get_object(Bucket=s3_uri['bucket'], Key=s3_uri['key'])        
+
         with open(fout, 'wb') as f:
-            self.s3.download_fileobj(
-                Bucket=s3_uri['bucket'],
-                Key=s3_uri['key'],
-                Fileobj=f
-            )
+            f.write(response['Body'].read())
         return fout
 
     def read(self, url):
