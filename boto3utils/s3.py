@@ -108,6 +108,11 @@ class s3(object):
         """ Download object from S3 as JSON """
         return json.loads(self.read(url))
 
+    def delete(self, url):
+        """ Remove object from S3 """
+        parts = self.urlparse(url)
+        response = self.s3.delete_object(Bucket=parts['Bucket'], Key=parts['Key'])
+        return response
 
     # function derived from https://alexwlchan.net/2018/01/listing-s3-keys-redux/
     def find(self, url, suffix=''):
