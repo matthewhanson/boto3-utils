@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 from gzip import GzipFile
 from io import BytesIO
 from os import makedirs, getenv
+from shutil import rmtree
+from tempfile import mkdtemp
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,19 @@ class s3(object):
             return self.s3_to_https(url_out, region)
         else:
             return url_out
+
+    def upload_json(self, data, url, **kwargs):
+        """ Upload dictionary as JSON to URL """
+        tmpdir = mkdtemp()
+        filename = op.join(tmpdir, 'catalog.json')
+        with open(filename, 'w') as f:
+            f.write(json.dumps(data))
+        try:
+            self.upload(filename, url, **kwargs)
+        except Exception as err:
+            logger.error(err)
+        finally:
+            rmtree(tmpdir)
 
     def download(self, uri, path='', requester_pays=False):
         """
