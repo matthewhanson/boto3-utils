@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 from gzip import GzipFile
 from io import BytesIO
 from os import makedirs, getenv
+from shutil import rmtree
+from tempfile import mkdtemp
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,19 @@ class s3(object):
         else:
             return url_out
 
+    def upload_json(self, data, url, **kwargs):
+        """ Upload dictionary as JSON to URL """
+        tmpdir = mkdtemp()
+        filename = op.join(tmpdir, 'catalog.json')
+        with open(filename, 'w') as f:
+            f.write(json.dumps(data))
+        try:
+            self.upload(filename, url, **kwargs)
+        except Exception as err:
+            logger.error(err)
+        finally:
+            rmtree(tmpdir)
+
     def download(self, uri, path='', requester_pays=False):
         """
         Download object from S3
@@ -108,6 +123,11 @@ class s3(object):
         """ Download object from S3 as JSON """
         return json.loads(self.read(url))
 
+    def delete(self, url):
+        """ Remove object from S3 """
+        parts = self.urlparse(url)
+        response = self.s3.delete_object(Bucket=parts['Bucket'], Key=parts['Key'])
+        return response
 
     # function derived from https://alexwlchan.net/2018/01/listing-s3-keys-redux/
     def find(self, url, suffix=''):
