@@ -4,16 +4,17 @@ import hashlib
 import hmac
 import logging
 import os
-
 import os.path as op
 
 from botocore.exceptions import ClientError
+from copy import deepcopy
 from datetime import datetime, timedelta
 from gzip import GzipFile
 from io import BytesIO
 from os import makedirs, getenv
 from shutil import rmtree
 from tempfile import mkdtemp
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +30,13 @@ class s3(object):
     @classmethod
     def urlparse(cls, url):
         """ Split S3 URL into bucket, key, filename """
+        _url = deepcopy(url)
+        if url[0:5] == 'https':
+            _url = cls.https_to_s3(url)
         if url[0:5] != 's3://':
-            raise Exception('Invalid S3 url %s' % url)
+            raise Exception('Invalid S3 url %s' % _url)
 
-        url_obj = url.replace('s3://', '').split('/')
+        url_obj = _url.replace('s3://', '').split('/')
 
         # remove empty items
         url_obj = list(filter(lambda x: x, url_obj))
@@ -42,6 +46,14 @@ class s3(object):
             'key': '/'.join(url_obj[1:]),
             'filename': url_obj[-1] if len(url_obj) > 1 else ''
         }
+
+    @classmethod
+    def https_to_s3(cls, url):
+        """ Convert https s3 URL to an s3 URL """
+        parts = urlparse(url)
+        bucket = parts.netloc.split('.')[0]
+        s3url = f"s3://{bucket}{parts.path}"
+        return s3url
 
     @classmethod
     def s3_to_https(cls, url, region=getenv('AWS_REGION', getenv('AWS_DEFAULT_REGION', 'us-east-1'))):
