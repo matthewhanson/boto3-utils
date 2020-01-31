@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v0.1.3] - 2020-01-29
+## [v0.1.3] - 2020-01-31
 
 ### Added
 - s3().https_to_s3 function
