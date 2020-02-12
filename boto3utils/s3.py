@@ -100,7 +100,15 @@ class s3(object):
         finally:
             rmtree(tmpdir)
 
-    def download(self, uri, path='', requester_pays=False):
+    def get_object(self, bucket, key, requester_pays=False):
+        """ Get an S3 object """
+        if requester_pays:
+            response = self.s3.get_object(Bucket=bucket, Key=key, RequestPayer='requester')
+        else:
+            response = self.s3.get_object(Bucket=bucket, Key=key)
+        return response
+
+    def download(self, uri, path='', **kwargs):
         """
         Download object from S3
         :param uri: URI of object to download
@@ -112,28 +120,24 @@ class s3(object):
         if path != '':
             makedirs(path, exist_ok=True)
 
-        if requester_pays:
-            response = self.s3.get_object(Bucket=s3_uri['bucket'], Key=s3_uri['key'],
-                                          RequestPayer='requester')
-        else:
-            response = self.s3.get_object(Bucket=s3_uri['bucket'], Key=s3_uri['key'])        
+        response = self.get_object(s3_uri['bucket'], s3_uri['key'], **kwargs)
 
         with open(fout, 'wb') as f:
             f.write(response['Body'].read())
         return fout
 
-    def read(self, url):
+    def read(self, url, **kwargs):
         """ Read object from s3 """
         parts = self.urlparse(url)
-        response = self.s3.get_object(Bucket=parts['bucket'], Key=parts['key'])
+        response = self.get_object(parts['bucket'], parts['key'], **kwargs)
         body = response['Body'].read()
         if op.splitext(parts['key'])[1] == '.gz':
             body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
         return body.decode('utf-8')
 
-    def read_json(self, url):
+    def read_json(self, url, **kwargs):
         """ Download object from S3 as JSON """
-        return json.loads(self.read(url))
+        return json.loads(self.read(url, **kwargs))
 
     def delete(self, url):
         """ Remove object from S3 """
