@@ -100,7 +100,15 @@ class s3(object):
         finally:
             rmtree(tmpdir)
 
-    def download(self, uri, path='', requester_pays=False):
+    def get_object(self, bucket, key, requester_pays=False):
+        """ Get an S3 object """
+        if requester_pays:
+            response = self.s3.get_object(Bucket=bucket, Key=key, RequestPayer='requester')
+        else:
+            response = self.s3.get_object(Bucket=bucket, Key=key)
+        return response
+
+    def download(self, uri, path='', **kwargs):
         """
         Download object from S3
         :param uri: URI of object to download
@@ -112,28 +120,24 @@ class s3(object):
         if path != '':
             makedirs(path, exist_ok=True)
 
-        if requester_pays:
-            response = self.s3.get_object(Bucket=s3_uri['bucket'], Key=s3_uri['key'],
-                                          RequestPayer='requester')
-        else:
-            response = self.s3.get_object(Bucket=s3_uri['bucket'], Key=s3_uri['key'])        
+        response = self.get_object(s3_uri['bucket'], s3_uri['key'], **kwargs)
 
         with open(fout, 'wb') as f:
             f.write(response['Body'].read())
         return fout
 
-    def read(self, url):
+    def read(self, url, **kwargs):
         """ Read object from s3 """
         parts = self.urlparse(url)
-        response = self.s3.get_object(Bucket=parts['bucket'], Key=parts['key'])
+        response = self.get_object(parts['bucket'], parts['key'], **kwargs)
         body = response['Body'].read()
         if op.splitext(parts['key'])[1] == '.gz':
             body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
         return body.decode('utf-8')
 
-    def read_json(self, url):
+    def read_json(self, url, **kwargs):
         """ Download object from S3 as JSON """
-        return json.loads(self.read(url))
+        return json.loads(self.read(url, **kwargs))
 
     def delete(self, url):
         """ Remove object from S3 """
@@ -178,7 +182,41 @@ class s3(object):
             except KeyError:
                 break
 
-    def latest_inventory(self, url, prefix=None, suffix=None, start_date=None, end_date=None, datetime_key='LastModifiedDate'):
+    def read_inventory_file(self, fname, keys, prefix=None, suffix=None, start_date=None, end_date=None, datetime_key='LastModifiedDate'):
+        logger.debug('Reading inventory file %s' % (fname))
+        
+        inv = [{keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))} for line in self.read(fname).split('\n')]
+
+        def fvalid(info):
+            return True if 'Key' in info and 'Bucket' in info else False
+
+        def fprefix(info):
+            return True if info['Key'][:len(prefix)] == prefix else False
+
+        def fsuffix(info):
+            return True if info['Key'].endswith(suffix) else False
+
+        def fstartdate(info):
+            dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
+            return True if dt > start_date else False
+
+        def fenddate(info):
+            dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
+            return True if dt < end_date else False
+
+        inv = filter(fvalid, inv)
+        if prefix:
+            inv = filter(fprefix, inv)
+        if suffix:
+            inv = filter(fsuffix, inv)
+        if start_date:
+            inv = filter(fstartdate, inv)
+        if end_date:
+            inv = filter(fenddate, inv)
+        for i in inv:
+            yield 's3://%s/%s' % (i['Bucket'], i['Key'])
+
+    def latest_inventory(self, url, **kwargs):
         """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
         parts = self.urlparse(url)
         # get latest manifest file
@@ -197,30 +235,15 @@ class s3(object):
             # get file schema
             keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
 
-            logger.info('Getting latest inventory from %s' % url)
-            counter = 0
-            for f in manifest.get('files', []):
+            files = manifest.get('files', [])
+            numfiles = len(files)
+            logger.info('Getting latest inventory from %s (%s files)' % (url, numfiles))
+
+            for i, f in enumerate(files):
+                logger.info('Reading inventory file %s/%s' % (i+1, numfiles))
                 _url = 's3://%s/%s' % (parts['bucket'], f['key'])
-                inv = self.read(_url).split('\n')
-                for line in inv:
-                    counter += 1
-                    if counter % 100000 == 0:
-                        logger.debug('%s: Scanned %s records' % (datetime.now(), str(counter)))                
-                    info = {keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))}
-                    if 'Key' not in info:
-                        continue
-                    # skip to next if last modified date not between start_date and end_date
-                    dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                    if (start_date is not None and dt < start_date) or (end_date is not None and dt > end_date):
-                        continue
-                    if prefix is not None:
-                        # if path doesn't match provided prefix skip to next record
-                        if info['Key'][:len(prefix)] != prefix:
-                            continue
-                    if suffix is None or info['Key'].endswith(suffix):
-                        if 'Bucket' in keys and 'Key' in keys:
-                            info['url'] = 's3://%s/%s' % (info['Bucket'], info['Key']) 
-                        yield info
+                results = self.read_inventory_file(_url, keys, **kwargs)
+                yield from results
 
 
 def get_presigned_url(url, aws_region=None,
