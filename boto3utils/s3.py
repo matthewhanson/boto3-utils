@@ -179,7 +179,7 @@ class s3(object):
                 break
 
     def read_inventory_file(self, fname, keys, prefix=None, suffix=None, start_date=None, end_date=None, datetime_key='LastModifiedDate'):
-        logger.info('Reading inventory file %s' % (fname))
+        logger.debug('Reading inventory file %s' % (fname))
         
         inv = [{keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))} for line in self.read(fname).split('\n')]
 
@@ -238,7 +238,8 @@ class s3(object):
             for i, f in enumerate(files):
                 logger.info('Reading inventory file %s/%s' % (i+1, numfiles))
                 _url = 's3://%s/%s' % (parts['bucket'], f['key'])
-                yield from self.read_inventory_file(_url, keys, **kwargs)
+                results = self.read_inventory_file(_url, keys, **kwargs)
+                yield from results
 
 
 def get_presigned_url(url, aws_region=None,
