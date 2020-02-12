@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Updated logging when reading from AWS inventory
+- s3.read_inventory_file added, breaking up functionality from s3.latest_inventory
+
+### Changed
+- s3.latest_inventory() returns URLs instead of an object
+- s3.latest_inventory faster filtering
+
 ## [v0.1.3] - 2020-01-31
 
 ### Added
