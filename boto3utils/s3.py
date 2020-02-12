@@ -198,17 +198,28 @@ class s3(object):
             keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
 
             logger.info('Getting latest inventory from %s' % url)
+            files = manifest.get('files', [])
+            numfiles = len(files)
+            logger.debug('There are %s inventory files' % numfiles)
             counter = 0
-            for f in manifest.get('files', []):
+            for i, f in enumerate(files):
                 _url = 's3://%s/%s' % (parts['bucket'], f['key'])
+                logger.debug('Reading inventory file %s/%s' % (i+1, numfiles))
                 inv = self.read(_url).split('\n')
                 for line in inv:
+                    if len(line) == 0:
+                        continue
+
+                    info = {keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))}
+
                     counter += 1
                     if counter % 100000 == 0:
-                        logger.debug('%s: Scanned %s records' % (datetime.now(), str(counter)))                
-                    info = {keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))}
-                    if 'Key' not in info:
-                        continue
+                        logger.debug('%s: Scanned %s records' % (datetime.now(), str(counter)))     
+
+                    if suffix is not None:
+                        if not info['Key'].endswith(suffix):
+                            continue
+
                     # skip to next if last modified date not between start_date and end_date
                     dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
                     if (start_date is not None and dt < start_date) or (end_date is not None and dt > end_date):
@@ -217,10 +228,11 @@ class s3(object):
                         # if path doesn't match provided prefix skip to next record
                         if info['Key'][:len(prefix)] != prefix:
                             continue
-                    if suffix is None or info['Key'].endswith(suffix):
-                        if 'Bucket' in keys and 'Key' in keys:
-                            info['url'] = 's3://%s/%s' % (info['Bucket'], info['Key']) 
+                    #if suffix is None or info['Key'].endswith(suffix):
+                    if 'Bucket' in keys and 'Key' in keys:
+                        info['url'] = 's3://%s/%s' % (info['Bucket'], info['Key']) 
                         yield info
+                print(info['Key'])
 
 
 def get_presigned_url(url, aws_region=None,
