@@ -33,7 +33,7 @@ class s3(object):
         _url = deepcopy(url)
         if url[0:5] == 'https':
             _url = cls.https_to_s3(url)
-        if url[0:5] != 's3://':
+        if _url[0:5] != 's3://':
             raise Exception('Invalid S3 url %s' % _url)
 
         url_obj = _url.replace('s3://', '').split('/')
