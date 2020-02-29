@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.2.1] - 2020-02-28
+
+### Added
+- secrets module with get_secrets function for getting AWS secret as a dictionary {key:value}
+
 ### Fixed
 - s3.urlpase when URL is an http URL
 
@@ -55,6 +60,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 Initial Release
 
 [Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/master...develop
+[v0.2.1]: https://github.com/matthewhanson/boto3-utils/compare/0.2.0...0.2.1
 [v0.2.0]: https://github.com/matthewhanson/boto3-utils/compare/0.1.3...0.2.0
 [v0.1.3]: https://github.com/matthewhanson/boto3-utils/compare/0.1.2...0.1.3
 [v0.1.2]: https://github.com/matthewhanson/boto3-utils/compare/0.1.1...0.1.2
