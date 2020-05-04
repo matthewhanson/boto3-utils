@@ -91,10 +91,14 @@ class s3(object):
         """ Upload dictionary as JSON to URL """
         tmpdir = mkdtemp()
         filename = op.join(tmpdir, 'catalog.json')
+        _extra = {
+            'ContentType': 'application/json'
+        }
+        _extra.update(kwargs.pop('extra', {}))
         with open(filename, 'w') as f:
             f.write(json.dumps(data))
         try:
-            self.upload(filename, url, **kwargs)
+            self.upload(filename, url, extra=_extra, **kwargs)
         except Exception as err:
             logger.error(err)
         finally:
