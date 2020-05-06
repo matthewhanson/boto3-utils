@@ -87,14 +87,14 @@ class s3(object):
         else:
             return url_out
 
-    def upload_json(self, data, url, **kwargs):
+    def upload_json(self, data, url, extra={}, **kwargs):
         """ Upload dictionary as JSON to URL """
         tmpdir = mkdtemp()
         filename = op.join(tmpdir, 'catalog.json')
         _extra = {
             'ContentType': 'application/json'
         }
-        _extra.update(kwargs.pop('extra', {}))
+        _extra.update(extra))
         with open(filename, 'w') as f:
             f.write(json.dumps(data))
         try:
