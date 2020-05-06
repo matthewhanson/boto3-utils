@@ -91,10 +91,14 @@ class s3(object):
         """ Upload dictionary as JSON to URL """
         tmpdir = mkdtemp()
         filename = op.join(tmpdir, 'catalog.json')
+        _extra = {
+            'ContentType': 'application/json'
+        }
+        _extra.update(kwargs.pop('extra', {}))
         with open(filename, 'w') as f:
             f.write(json.dumps(data))
         try:
-            self.upload(filename, url, **kwargs)
+            self.upload(filename, url, extra=_extra, **kwargs)
         except Exception as err:
             logger.error(err)
         finally:
@@ -216,8 +220,8 @@ class s3(object):
         for i in inv:
             yield 's3://%s/%s' % (i['Bucket'], i['Key'])
 
-    def latest_inventory(self, url, **kwargs):
-        """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
+    def latest_inventory_manifest(self, url):
+        """ Get latest inventory manifest file """
         parts = self.urlparse(url)
         # get latest manifest file
         today = datetime.now()
@@ -229,20 +233,35 @@ class s3(object):
             if len(manifests) == 1:
                 manifest_url = manifests[0]
                 break
-        # read through latest manifest looking for matches
         if manifest_url:
-            manifest = self.read_json(manifest_url)
+            return self.read_json(manifest_url)
+        else:
+            return None
+
+    def latest_inventory_files(self, url):
+        bucket = self.urlparse(url)['bucket']
+        manifest = self.latest_inventory_manifest(url)
+        if manifest:
+            files = manifest.get('files', [])
+            numfiles = len(files)
+            logger.info('Getting latest inventory from %s (%s files)' % (url, numfiles))            
+
+            for f in files:
+                _url = 's3://%s/%s' % (bucket, f['key'])
+                yield _url
+
+    def latest_inventory(self, url, **kwargs):
+        """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
+        bucket = self.urlparse(url)['bucket']
+        manifest = self.latest_inventory_manifest(url)
+        # read through latest manifest looking for matches
+        if manifest:
             # get file schema
             keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
 
-            files = manifest.get('files', [])
-            numfiles = len(files)
-            logger.info('Getting latest inventory from %s (%s files)' % (url, numfiles))
-
-            for i, f in enumerate(files):
-                logger.info('Reading inventory file %s/%s' % (i+1, numfiles))
-                _url = 's3://%s/%s' % (parts['bucket'], f['key'])
-                results = self.read_inventory_file(_url, keys, **kwargs)
+            for i, url in enumerate(self.latest_inventory_files(url)):
+                logger.info('Reading inventory file %s' % (i+1))
+                results = self.read_inventory_file(url, keys, **kwargs)
                 yield from results
 
 

@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.2.2] - 2020-05-05
+
+### Added
+- Split up s3.latest_inventory() into multiple more modular functions, there is now
+  - s3.latest_inventory_manifest() - get manifest file for latest inventory
+  - s3.latest_inventory_files() - iterator to inventory files (each is listing of files in inventory)
+
 ## [v0.2.1] - 2020-02-28
 
 ### Added
