@@ -259,8 +259,8 @@ class s3(object):
             # get file schema
             keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
 
-            for url in self.latest_inventory_files(url):
-                logger.info('Reading inventory file %s/%s' % (i+1, numfiles))
+            for i, url in enumerate(self.latest_inventory_files(url)):
+                logger.info('Reading inventory file %s' % (i+1))
                 results = self.read_inventory_file(url, keys, **kwargs)
                 yield from results
 
