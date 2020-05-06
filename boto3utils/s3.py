@@ -94,7 +94,7 @@ class s3(object):
         _extra = {
             'ContentType': 'application/json'
         }
-        _extra.update(extra))
+        _extra.update(extra)
         with open(filename, 'w') as f:
             f.write(json.dumps(data))
         try:
