@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 class s3(object):
 
-    def __init__(self, session=None):
+    def __init__(self, session=None, requester_pays=False):
+        self.requester_pays = requester_pays
         if session is None:
             self.s3 = boto3.client('s3')
         else:
@@ -104,15 +105,15 @@ class s3(object):
         finally:
             rmtree(tmpdir)
 
-    def get_object(self, bucket, key, requester_pays=False):
+    def get_object(self, bucket, key):
         """ Get an S3 object """
-        if requester_pays:
+        if self.requester_pays:
             response = self.s3.get_object(Bucket=bucket, Key=key, RequestPayer='requester')
         else:
             response = self.s3.get_object(Bucket=bucket, Key=key)
         return response
 
-    def download(self, uri, path='', **kwargs):
+    def download(self, uri, path=''):
         """
         Download object from S3
         :param uri: URI of object to download
@@ -124,24 +125,24 @@ class s3(object):
         if path != '':
             makedirs(path, exist_ok=True)
 
-        response = self.get_object(s3_uri['bucket'], s3_uri['key'], **kwargs)
+        response = self.get_object(s3_uri['bucket'], s3_uri['key'])
 
         with open(fout, 'wb') as f:
             f.write(response['Body'].read())
         return fout
 
-    def read(self, url, **kwargs):
+    def read(self, url):
         """ Read object from s3 """
         parts = self.urlparse(url)
-        response = self.get_object(parts['bucket'], parts['key'], **kwargs)
+        response = self.get_object(parts['bucket'], parts['key'])
         body = response['Body'].read()
         if op.splitext(parts['key'])[1] == '.gz':
             body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
         return body.decode('utf-8')
 
-    def read_json(self, url, **kwargs):
+    def read_json(self, url):
         """ Download object from S3 as JSON """
-        return json.loads(self.read(url, **kwargs))
+        return json.loads(self.read(url))
 
     def delete(self, url):
         """ Remove object from S3 """
