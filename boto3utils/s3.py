@@ -124,11 +124,10 @@ class s3(object):
         logger.debug("Downloading %s as %s" % (uri, fout))
         if path != '':
             makedirs(path, exist_ok=True)
-
-        response = self.get_object(s3_uri['bucket'], s3_uri['key'])
-
-        with open(fout, 'wb') as f:
-            f.write(response['Body'].read())
+        extra_args = None
+        if self.requester_pays:
+            extra_args = {'RequestPayer': 'requester'}
+        self.s3.download_file(s3_uri['bucket'], s3_uri['key'], fout, ExtraArgs=extra_args)
         return fout
 
     def read(self, url):
