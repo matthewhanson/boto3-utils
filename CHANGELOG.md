@@ -6,12 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v0.3.1] = 2020-07-29
+## [v0.3.1] - 2020-07-29
 
 ### Changed
 - s3.download() now uses boto3 download_file for multipart stream downloads to avoid memory errors downloading large files
 
-## [v0.3.0] = 2020-06-14
+## [v0.3.0] - 2020-06-14
 
 ### Changed
 - `requester_pays` parameter now argument to s3 session rather than download
