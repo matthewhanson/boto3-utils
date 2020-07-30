@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.3.1] = 2020-07-29
+
+### Changed
+- s3.download() now uses boto3 download_file for multipart stream downloads to avoid memory errors downloading large files
+
 ## [v0.3.0] = 2020-06-14
 
 ### Changed
@@ -77,7 +82,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 Initial Release
 
 [Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/master...develop
-[v0.3.0]: https://github.com/matthewhanson/boto3-utils/compare/0.3.0...0.2.3
+[v0.3.1]: https://github.com/matthewhanson/boto3-utils/compare/0.3.0...0.3.1
+[v0.3.0]: https://github.com/matthewhanson/boto3-utils/compare/0.2.3...0.3.0
 [v0.2.3]: https://github.com/matthewhanson/boto3-utils/compare/0.2.2...0.2.3
 [v0.2.2]: https://github.com/matthewhanson/boto3-utils/compare/0.2.1...0.2.2
 [v0.2.1]: https://github.com/matthewhanson/boto3-utils/compare/0.2.0...0.2.1
