@@ -58,7 +58,7 @@ class s3(object):
 
     @classmethod
     def s3_to_https(cls, url, region=getenv('AWS_REGION', getenv('AWS_DEFAULT_REGION', 'us-east-1'))):
-        """ Convert an s3 URL to an s3 https URL """    
+        """ Convert an s3 URL to an s3 https URL """
         parts = cls.urlparse(url)
         return 'https://%s.s3.%s.amazonaws.com/%s' % (parts['bucket'], region, parts['key'])
 
@@ -186,10 +186,11 @@ class s3(object):
             except KeyError:
                 break
 
-    def read_inventory_file(self, fname, keys, prefix=None, suffix=None, start_date=None, end_date=None, datetime_key='LastModifiedDate'):
+    def read_inventory_file(self, fname, keys, prefix=None, suffix=None,
+                            start_date=None, end_date=None, datetime_key='LastModifiedDate'):
         logger.debug('Reading inventory file %s' % (fname))
-        
-        inv = [{keys[i]: v for i, v in  enumerate(line.replace('"', '').split(','))} for line in self.read(fname).split('\n')]
+
+        inv = [{keys[i]: v for i, v in enumerate(line.replace('"', '').split(','))} for line in self.read(fname).split('\n')]
 
         def fvalid(info):
             return True if 'Key' in info and 'Bucket' in info else False
@@ -244,7 +245,7 @@ class s3(object):
         if manifest:
             files = manifest.get('files', [])
             numfiles = len(files)
-            logger.info('Getting latest inventory from %s (%s files)' % (url, numfiles))            
+            logger.info('Getting latest inventory from %s (%s files)' % (url, numfiles))
 
             for f in files:
                 _url = 's3://%s/%s' % (bucket, f['key'])
@@ -252,7 +253,6 @@ class s3(object):
 
     def latest_inventory(self, url, **kwargs):
         """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
-        bucket = self.urlparse(url)['bucket']
         manifest = self.latest_inventory_manifest(url)
         # read through latest manifest looking for matches
         if manifest:
@@ -260,7 +260,7 @@ class s3(object):
             keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
 
             for i, url in enumerate(self.latest_inventory_files(url)):
-                logger.info('Reading inventory file %s' % (i+1))
+                logger.info('Reading inventory file %s' % (i + 1))
                 results = self.read_inventory_file(url, keys, **kwargs)
                 yield from results
 
@@ -297,11 +297,11 @@ def get_presigned_url(url, aws_region=None,
         kService = sign(kRegion, serviceName)
         kSigning = sign(kService, 'aws4_request')
         return kSigning
- 
+
     # Create a date for headers and the credential string
     t = datetime.utcnow()
     amzdate = t.strftime('%Y%m%dT%H%M%SZ')
-    datestamp = t.strftime('%Y%m%d') # Date w/o time, used in credential scope
+    datestamp = t.strftime('%Y%m%d')  # Date w/o time, used in credential scope
 
     # create signed request and headers
     canonical_uri = '/' + key
@@ -328,7 +328,8 @@ def get_presigned_url(url, aws_region=None,
     )
     algorithm = 'AWS4-HMAC-SHA256'
     credential_scope = datestamp + '/' + region + '/' + service + '/' + 'aws4_request'
-    string_to_sign = algorithm + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()
+    string_to_sign = algorithm + '\n' + amzdate + '\n' + credential_scope + '\n' + \
+        hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()
     signing_key = getSignatureKey(secret_key, datestamp, region, service)
     signature = hmac.new(signing_key, string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
     authorization_header = algorithm + ' ' + 'Credential=' + access_key + '/' + credential_scope + ', ' \
