@@ -21,7 +21,7 @@ SECRET_BINARY = base64.b64encode(SECRET_STRING.encode())
 @mock_secretsmanager
 def test_get_secret_string():
     boto3.session.Session().client('secretsmanager',
-                                   region_name='us-west-2').create_secret(
+                                   region_name='us-east-1').create_secret(
                                        Name=SECRET_NAME,
                                        SecretString=SECRET_STRING)
     secret = secrets.get_secret(SECRET_NAME)
