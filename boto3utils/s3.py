@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 class s3(object):
-
     def __init__(self, session=None, requester_pays=False):
         self.requester_pays = requester_pays
         if session is None:
@@ -57,10 +56,14 @@ class s3(object):
         return s3url
 
     @classmethod
-    def s3_to_https(cls, url, region=getenv('AWS_REGION', getenv('AWS_DEFAULT_REGION', 'us-east-1'))):
+    def s3_to_https(cls,
+                    url,
+                    region=getenv('AWS_REGION',
+                                  getenv('AWS_DEFAULT_REGION', 'us-east-1'))):
         """ Convert an s3 URL to an s3 https URL """
         parts = cls.urlparse(url)
-        return 'https://%s.s3.%s.amazonaws.com/%s' % (parts['bucket'], region, parts['key'])
+        return 'https://%s.s3.%s.amazonaws.com/%s' % (parts['bucket'], region,
+                                                      parts['key'])
 
     def exists(self, url):
         """ Check if this URL exists on S3 """
@@ -81,9 +84,13 @@ class s3(object):
         if public:
             extra['ACL'] = 'public-read'
         with open(filename, 'rb') as data:
-            self.s3.upload_fileobj(data, parts['bucket'], parts['key'], ExtraArgs=extra)
+            self.s3.upload_fileobj(data,
+                                   parts['bucket'],
+                                   parts['key'],
+                                   ExtraArgs=extra)
         if http_url:
-            region = self.s3.get_bucket_location(Bucket=parts['bucket'])['LocationConstraint']
+            region = self.s3.get_bucket_location(
+                Bucket=parts['bucket'])['LocationConstraint']
             return self.s3_to_https(url_out, region)
         else:
             return url_out
@@ -92,9 +99,7 @@ class s3(object):
         """ Upload dictionary as JSON to URL """
         tmpdir = mkdtemp()
         filename = op.join(tmpdir, 'catalog.json')
-        _extra = {
-            'ContentType': 'application/json'
-        }
+        _extra = {'ContentType': 'application/json'}
         _extra.update(extra)
         with open(filename, 'w') as f:
             f.write(json.dumps(data))
@@ -108,7 +113,9 @@ class s3(object):
     def get_object(self, bucket, key):
         """ Get an S3 object """
         if self.requester_pays:
-            response = self.s3.get_object(Bucket=bucket, Key=key, RequestPayer='requester')
+            response = self.s3.get_object(Bucket=bucket,
+                                          Key=key,
+                                          RequestPayer='requester')
         else:
             response = self.s3.get_object(Bucket=bucket, Key=key)
         return response
@@ -127,7 +134,10 @@ class s3(object):
         extra_args = None
         if self.requester_pays:
             extra_args = {'RequestPayer': 'requester'}
-        self.s3.download_file(s3_uri['bucket'], s3_uri['key'], fout, ExtraArgs=extra_args)
+        self.s3.download_file(s3_uri['bucket'],
+                              s3_uri['key'],
+                              fout,
+                              ExtraArgs=extra_args)
         return fout
 
     def read(self, url):
@@ -146,7 +156,8 @@ class s3(object):
     def delete(self, url):
         """ Remove object from S3 """
         parts = self.urlparse(url)
-        response = self.s3.delete_object(Bucket=parts['Bucket'], Key=parts['Key'])
+        response = self.s3.delete_object(Bucket=parts['Bucket'],
+                                         Key=parts['Key'])
         return response
 
     # function derived from https://alexwlchan.net/2018/01/listing-s3-keys-redux/
@@ -186,11 +197,20 @@ class s3(object):
             except KeyError:
                 break
 
-    def read_inventory_file(self, fname, keys, prefix=None, suffix=None,
-                            start_date=None, end_date=None, datetime_key='LastModifiedDate'):
+    def read_inventory_file(self,
+                            fname,
+                            keys,
+                            prefix=None,
+                            suffix=None,
+                            start_date=None,
+                            end_date=None,
+                            datetime_key='LastModifiedDate'):
         logger.debug('Reading inventory file %s' % (fname))
 
-        inv = [{keys[i]: v for i, v in enumerate(line.replace('"', '').split(','))} for line in self.read(fname).split('\n')]
+        inv = [{
+            keys[i]: v
+            for i, v in enumerate(line.replace('"', '').split(','))
+        } for line in self.read(fname).split('\n')]
 
         def fvalid(info):
             return True if 'Key' in info and 'Bucket' in info else False
@@ -202,11 +222,13 @@ class s3(object):
             return True if info['Key'].endswith(suffix) else False
 
         def fstartdate(info):
-            dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
+            dt = datetime.strptime(info[datetime_key],
+                                   "%Y-%m-%dT%H:%M:%S.%fZ").date()
             return True if dt > start_date else False
 
         def fenddate(info):
-            dt = datetime.strptime(info[datetime_key], "%Y-%m-%dT%H:%M:%S.%fZ").date()
+            dt = datetime.strptime(info[datetime_key],
+                                   "%Y-%m-%dT%H:%M:%S.%fZ").date()
             return True if dt < end_date else False
 
         inv = filter(fvalid, inv)
@@ -245,7 +267,8 @@ class s3(object):
         if manifest:
             files = manifest.get('files', [])
             numfiles = len(files)
-            logger.info('Getting latest inventory from %s (%s files)' % (url, numfiles))
+            logger.info('Getting latest inventory from %s (%s files)' %
+                        (url, numfiles))
 
             for f in files:
                 _url = 's3://%s/%s' % (bucket, f['key'])
@@ -257,7 +280,9 @@ class s3(object):
         # read through latest manifest looking for matches
         if manifest:
             # get file schema
-            keys = [str(key).strip() for key in manifest['fileSchema'].split(',')]
+            keys = [
+                str(key).strip() for key in manifest['fileSchema'].split(',')
+            ]
 
             for i, url in enumerate(self.latest_inventory_files(url)):
                 logger.info('Reading inventory file %s' % (i + 1))
@@ -265,12 +290,19 @@ class s3(object):
                 yield from results
 
 
-def get_presigned_url(url, aws_region=None,
-                      rtype='GET', public=False, requester_pays=False, content_type=None):
+def get_presigned_url(url,
+                      aws_region=None,
+                      rtype='GET',
+                      public=False,
+                      requester_pays=False,
+                      content_type=None):
     """ Get presigned URL """
-    access_key = os.environ.get('AWS_BUCKET_ACCESS_KEY_ID', os.environ.get('AWS_ACCESS_KEY_ID'))
-    secret_key = os.environ.get('AWS_BUCKET_SECRET_ACCESS_KEY', os.environ.get('AWS_SECRET_ACCESS_KEY'))
-    region = os.environ.get('AWS_BUCKET_REGION', os.environ.get('AWS_REGION', 'eu-central-1'))
+    access_key = os.environ.get('AWS_BUCKET_ACCESS_KEY_ID',
+                                os.environ.get('AWS_ACCESS_KEY_ID'))
+    secret_key = os.environ.get('AWS_BUCKET_SECRET_ACCESS_KEY',
+                                os.environ.get('AWS_SECRET_ACCESS_KEY'))
+    region = os.environ.get('AWS_BUCKET_REGION',
+                            os.environ.get('AWS_REGION', 'eu-central-1'))
     if aws_region is not None:
         region = aws_region
     if access_key is None or secret_key is None:
@@ -318,20 +350,23 @@ def get_presigned_url(url, aws_region=None,
         headers['x-amz-request-payer'] = 'requester'
     if public:
         headers['x-amz-acl'] = 'public-read'
-    if os.environ.get('AWS_SESSION_TOKEN') and 'AWS_BUCKET_ACCESS_KEY_ID' not in os.environ:
+    if os.environ.get('AWS_SESSION_TOKEN'
+                      ) and 'AWS_BUCKET_ACCESS_KEY_ID' not in os.environ:
         headers['x-amz-security-token'] = os.environ.get('AWS_SESSION_TOKEN')
-    canonical_headers = '\n'.join('%s:%s' % (key, headers[key]) for key in sorted(headers)) + '\n'
+    canonical_headers = '\n'.join('%s:%s' % (key, headers[key])
+                                  for key in sorted(headers)) + '\n'
     signed_headers = ';'.join(sorted(headers.keys()))
 
     canonical_request = '%s\n%s\n%s\n%s\n%s\n%s' % (
-        rtype, canonical_uri, canonical_querystring, canonical_headers, signed_headers, payload_hash
-    )
+        rtype, canonical_uri, canonical_querystring, canonical_headers,
+        signed_headers, payload_hash)
     algorithm = 'AWS4-HMAC-SHA256'
     credential_scope = datestamp + '/' + region + '/' + service + '/' + 'aws4_request'
     string_to_sign = algorithm + '\n' + amzdate + '\n' + credential_scope + '\n' + \
         hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()
     signing_key = getSignatureKey(secret_key, datestamp, region, service)
-    signature = hmac.new(signing_key, string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
+    signature = hmac.new(signing_key, string_to_sign.encode('utf-8'),
+                         hashlib.sha256).hexdigest()
     authorization_header = algorithm + ' ' + 'Credential=' + access_key + '/' + credential_scope + ', ' \
         + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
 

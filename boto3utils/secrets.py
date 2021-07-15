@@ -7,17 +7,13 @@ def get_secret(secret_name):
     """ Get secrets as a dictionary from Secrets Manager """
     # Create a Secrets Manager client
     session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager'
-    )
+    client = session.client(service_name='secretsmanager')
 
     # Will throw a botocore.exceptions.ClientError for any of
     # the specific exceptions for the 'GetSecretValue' API.
     # See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
 
-    get_secret_value_response = client.get_secret_value(
-        SecretId=secret_name
-    )
+    get_secret_value_response = client.get_secret_value(SecretId=secret_name)
 
     # Decrypts secret using the associated KMS CMK.
     # Depending on whether the secret is a string or binary, one of these fields will be populated.

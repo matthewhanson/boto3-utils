@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class stepfunctions(object):
-
     def __init__(self, session=None):
         config = Config(read_timeout=70)
         if session is None:
@@ -37,10 +36,14 @@ class stepfunctions(object):
                 # run process function with payload as kwargs
                 output = process(json.loads(payload))
                 # Send task success
-                self.sfn.send_task_success(taskToken=token, output=json.dumps(output))
+                self.sfn.send_task_success(taskToken=token,
+                                           output=json.dumps(output))
             except Exception as e:
                 err = str(e)
                 tb = format_exc()
-                logger.error("Exception when running task: %s - %s" % (err, json.dumps(tb)))
+                logger.error("Exception when running task: %s - %s" %
+                             (err, json.dumps(tb)))
                 err = (err[252] + ' ...') if len(err) > 252 else err
-                self.sfn.send_task_failure(taskToken=token, error=str(err), cause=tb)
+                self.sfn.send_task_failure(taskToken=token,
+                                           error=str(err),
+                                           cause=tb)
