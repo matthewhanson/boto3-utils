@@ -1,9 +1,9 @@
+# this must be imported before any boto3 module
+from moto import mock_s3
+
 import boto3
 import os
 import pytest
-
-# this must be imported before any boto3 module
-from moto import mock_s3
 
 from boto3utils import s3
 from shutil import rmtree

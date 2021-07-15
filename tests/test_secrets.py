@@ -1,11 +1,11 @@
+# this must be imported before any boto3 module
+from moto import mock_secretsmanager
+
 import os
 import boto3
 import pytest
 import json
 import base64
-
-# this must be imported before any boto3 module
-from moto import mock_secretsmanager
 
 from boto3utils import secrets
 from botocore.exceptions import ClientError
