@@ -37,7 +37,7 @@ def test_get_secret_undef():
 @mock_secretsmanager
 def test_get_secret_binary():
     boto3.session.Session().client('secretsmanager',
-                                   region_name='us-west-2').create_secret(
+                                   region_name='us-east-1').create_secret(
                                        Name=SECRET_NAME,
                                        SecretBinary=SECRET_BINARY)
     secret = secrets.get_secret(SECRET_NAME)
