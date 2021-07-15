@@ -16,7 +16,7 @@ KEY = 'testkey'
 def s3mock():
     with mock_s3():
         client = boto3.client('s3',
-                              region_name='us-west-2',
+                              region_name='us-east-1',
                               aws_access_key_id='noid',
                               aws_secret_access_key='nokey')
         client.create_bucket(Bucket=BUCKET)
