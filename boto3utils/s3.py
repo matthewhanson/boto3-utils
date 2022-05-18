@@ -204,6 +204,7 @@ class s3(object):
                             suffix=None,
                             start_date=None,
                             end_date=None,
+                            is_latest=None,
                             datetime_key='LastModifiedDate'):
         logger.debug('Reading inventory file %s' % (fname))
 
@@ -231,7 +232,13 @@ class s3(object):
                                    "%Y-%m-%dT%H:%M:%S.%fZ").date()
             return True if dt < end_date else False
 
+        def islatest(info):
+            if latest := info.get("IsLatest"):
+                return latest not in ("false", False)
+            return True
+
         inv = filter(fvalid, inv)
+
         if prefix:
             inv = filter(fprefix, inv)
         if suffix:
@@ -240,6 +247,9 @@ class s3(object):
             inv = filter(fstartdate, inv)
         if end_date:
             inv = filter(fenddate, inv)
+        if is_latest is not None:
+            inv - filter(islatest, inv)
+
         for i in inv:
             yield 's3://%s/%s' % (i['Bucket'], i['Key'])
 
