@@ -205,6 +205,7 @@ class s3(object):
                             start_date=None,
                             end_date=None,
                             is_latest=None,
+                            key_contains=None,
                             datetime_key='LastModifiedDate'):
         logger.debug('Reading inventory file %s' % (fname))
 
@@ -237,8 +238,18 @@ class s3(object):
                 return latest not in ("false", False)
             return True
 
+        def fcontains(info):
+            for part in key_contains:
+                if part not in info["Key"]:
+                    return False
+            return True
+
         inv = filter(fvalid, inv)
 
+        if is_latest is not None:
+            inv - filter(islatest, inv)
+        if key_contains:
+            inv = filter(fcontains, inv)
         if prefix:
             inv = filter(fprefix, inv)
         if suffix:
@@ -247,8 +258,6 @@ class s3(object):
             inv = filter(fstartdate, inv)
         if end_date:
             inv = filter(fenddate, inv)
-        if is_latest is not None:
-            inv - filter(islatest, inv)
 
         for i in inv:
             yield 's3://%s/%s' % (i['Bucket'], i['Key'])
@@ -291,7 +300,7 @@ class s3(object):
         """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
         manifest_age_days = kwargs.pop("manifest_age_days", 1)
         manifest = self.latest_inventory_manifest(url, manifest_age_days)
-    
+
         # read through latest manifest looking for matches
         if manifest:
             # get file schema
