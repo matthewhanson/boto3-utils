@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now testing against python 3.9 and 3.10
 
 ### Fixed
+- s3.delete works
 - Handle bucket locations in US Standard region
 
 ## [v0.3.2] - 2021-07-15

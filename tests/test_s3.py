@@ -107,6 +107,12 @@ def test_read_json(s3mock):
     assert (out['field'] == 'value')
 
 
+def test_delete(s3mock):
+    url = 's3://%s/test.json' % BUCKET
+    out = s3().delete(url)
+    assert (out['ResponseMetadata']['HTTPStatusCode'] == 204)
+
+
 def test_find(s3mock):
     url = 's3://%s/test' % BUCKET
     urls = list(s3().find(url))

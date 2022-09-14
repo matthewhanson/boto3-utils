@@ -162,8 +162,8 @@ class s3(object):
     def delete(self, url):
         """ Remove object from S3 """
         parts = self.urlparse(url)
-        response = self.s3.delete_object(Bucket=parts['Bucket'],
-                                         Key=parts['Key'])
+        response = self.s3.delete_object(Bucket=parts['bucket'],
+                                         Key=parts['key'])
         return response
 
     # function derived from https://alexwlchan.net/2018/01/listing-s3-keys-redux/
