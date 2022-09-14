@@ -76,6 +76,13 @@ class s3(object):
                 raise
             return False
 
+    def get_bucket_region(self, bucket_name):
+        region = self.s3.get_bucket_location(
+            Bucket=bucket_name)['LocationConstraint']
+        # US Standard region buckets will have a null location
+        # https://github.com/aws/aws-cli/issues/3864
+        return region if region else 'us-east-1'
+
     def upload(self, filename, url, public=False, extra={}, http_url=False):
         """ Upload object to S3 uri (bucket + prefix), keeping same base filename """
         logger.debug("Uploading %s to %s" % (filename, url))
@@ -89,9 +96,8 @@ class s3(object):
                                    parts['key'],
                                    ExtraArgs=extra)
         if http_url:
-            region = self.s3.get_bucket_location(
-                Bucket=parts['bucket'])['LocationConstraint']
-            return self.s3_to_https(url_out, region)
+            return self.s3_to_https(url_out,
+                                    self.get_bucket_region(parts['bucket']))
         else:
             return url_out
 
@@ -156,8 +162,8 @@ class s3(object):
     def delete(self, url):
         """ Remove object from S3 """
         parts = self.urlparse(url)
-        response = self.s3.delete_object(Bucket=parts['Bucket'],
-                                         Key=parts['Key'])
+        response = self.s3.delete_object(Bucket=parts['bucket'],
+                                         Key=parts['key'])
         return response
 
     # function derived from https://alexwlchan.net/2018/01/listing-s3-keys-redux/
@@ -234,7 +240,8 @@ class s3(object):
             return True if dt < end_date else False
 
         def islatest(info):
-            if latest := info.get("IsLatest"):
+            latest = info.get("IsLatest")
+            if latest:
                 return latest not in ("false", False)
             return True
 
@@ -308,7 +315,8 @@ class s3(object):
                 str(key).strip() for key in manifest['fileSchema'].split(',')
             ]
 
-            for i, url in enumerate(self.latest_inventory_files(url, manifest)):
+            for i, url in enumerate(self.latest_inventory_files(url,
+                                                                manifest)):
                 logger.info('Reading inventory file %s' % (i + 1))
                 results = self.read_inventory_file(url, keys, **kwargs)
                 yield from results

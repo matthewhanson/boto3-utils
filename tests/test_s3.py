@@ -1,6 +1,3 @@
-# this must be imported before any boto3 module
-from moto import mock_s3
-
 import boto3
 import os
 import pytest
@@ -9,22 +6,37 @@ from boto3utils import s3
 from shutil import rmtree
 
 BUCKET = 'testbucket'
+BUCKET_WEST = 'testbucket_west'
 KEY = 'testkey'
 
 
-@pytest.fixture(scope='function')
-def s3mock():
-    with mock_s3():
-        client = boto3.client('s3',
-                              region_name='us-east-1',
-                              aws_access_key_id='noid',
-                              aws_secret_access_key='nokey')
-        client.create_bucket(Bucket=BUCKET)
-        client.put_object(Body='helloworld', Bucket=BUCKET, Key=KEY)
-        client.upload_file(Filename=os.path.join(testpath, 'test.json'),
-                           Bucket=BUCKET,
-                           Key='test.json')
-        yield client
+def create_test_bucket(s3, bucket):
+    params = {
+        'Bucket': bucket,
+    }
+
+    if s3.meta.region_name != 'us-east-1':
+        params['CreateBucketConfiguration'] = {
+            'LocationConstraint': s3.meta.region_name,
+        }
+
+    s3.create_bucket(**params)
+    s3.put_object(Body='helloworld', Bucket=bucket, Key=KEY)
+    s3.upload_file(Filename=os.path.join(testpath, 'test.json'),
+                   Bucket=bucket,
+                   Key='test.json')
+
+
+@pytest.fixture
+def s3mock(s3):
+    create_test_bucket(s3, BUCKET)
+    yield s3
+
+
+@pytest.fixture
+def s3mock_west(s3_west):
+    create_test_bucket(s3_west, BUCKET_WEST)
+    yield s3_west
 
 
 testpath = os.path.dirname(__file__)
@@ -53,6 +65,16 @@ def test_s3_to_https():
     s3url = 's3://bucket/prefix/filename'
     url = s3.s3_to_https(s3url, region='us-west-2')
     assert (url == 'https://bucket.s3.us-west-2.amazonaws.com/prefix/filename')
+
+
+def test_get_bucket_region_null(s3mock):
+    region = s3().get_bucket_region(BUCKET)
+    assert region == 'us-east-1'
+
+
+def test_get_bucket_region(s3mock_west):
+    region = s3().get_bucket_region(BUCKET_WEST)
+    assert region == 'us-west-2'
 
 
 def test_exists(s3mock):
@@ -85,6 +107,12 @@ def test_read_json(s3mock):
     assert (out['field'] == 'value')
 
 
+def test_delete(s3mock):
+    url = 's3://%s/test.json' % BUCKET
+    out = s3().delete(url)
+    assert (out['ResponseMetadata']['HTTPStatusCode'] == 204)
+
+
 def test_find(s3mock):
     url = 's3://%s/test' % BUCKET
     urls = list(s3().find(url))
@@ -93,10 +121,17 @@ def test_find(s3mock):
 
 
 def test_latest_inventory():
+    from botocore.handlers import disable_signing
+
     url = 's3://sentinel-inventory/sentinel-s1-l1c/sentinel-s1-l1c-inventory'
     suffix = 'productInfo.json'
     session = boto3.Session()
     _s3 = s3(session)
+
+    # as we are actually hitting S3 (which is not great), we need
+    # to prevent signing our request with the dummy test credentials
+    _s3.s3.meta.events.register('choose-signer.s3.*', disable_signing)
+
     for url in _s3.latest_inventory(url, suffix=suffix):
         # dt = datetime.strptime(f['LastModifiedDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
         # hours = (datetime.today() - dt).seconds // 3600

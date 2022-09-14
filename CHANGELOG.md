@@ -6,12 +6,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v0.3.3] - 2022-05-18
+## [v0.3.3] - 2022-09-14
 
 ### Added
 - s3.latest_inventory() takes manifest_age_days argument for how far back to look for manifest
 - s3.latest_inventory() takes is_latest argument for filtering on versioned files
 - s3.latest_inventory() takes key_contains array argument for filtering on key containing strings of the array
+
+### Changed
+- No longer testing against python 3.6
+- Now testing against python 3.9 and 3.10
+
+### Fixed
+- s3.delete works
+- Handle bucket locations in US Standard region
 
 ## [v0.3.2] - 2021-07-15
 
