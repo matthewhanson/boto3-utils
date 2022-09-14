@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - s3.latest_inventory() takes is_latest argument for filtering on versioned files
 - s3.latest_inventory() takes key_contains array argument for filtering on key containing strings of the array
 
+### Changed
+- No longer testing against python 3.6
+- Now testing against python 3.9 and 3.10
+
 ### Fixed
 - Handle bucket locations in US Standard region
 
