@@ -240,7 +240,8 @@ class s3(object):
             return True if dt < end_date else False
 
         def islatest(info):
-            if latest := info.get("IsLatest"):
+            latest = info.get("IsLatest")
+            if latest:
                 return latest not in ("false", False)
             return True
 
@@ -314,7 +315,8 @@ class s3(object):
                 str(key).strip() for key in manifest['fileSchema'].split(',')
             ]
 
-            for i, url in enumerate(self.latest_inventory_files(url, manifest)):
+            for i, url in enumerate(self.latest_inventory_files(url,
+                                                                manifest)):
                 logger.info('Reading inventory file %s' % (i + 1))
                 results = self.read_inventory_file(url, keys, **kwargs)
                 yield from results
