@@ -76,6 +76,13 @@ class s3(object):
                 raise
             return False
 
+    def get_bucket_region(self, bucket_name):
+        region = self.s3.get_bucket_location(
+            Bucket=bucket_name)['LocationConstraint']
+        # US Standard region buckets will have a null location
+        # https://github.com/aws/aws-cli/issues/3864
+        return region if region else 'us-east-1'
+
     def upload(self, filename, url, public=False, extra={}, http_url=False):
         """ Upload object to S3 uri (bucket + prefix), keeping same base filename """
         logger.debug("Uploading %s to %s" % (filename, url))
@@ -89,9 +96,7 @@ class s3(object):
                                    parts['key'],
                                    ExtraArgs=extra)
         if http_url:
-            region = self.s3.get_bucket_location(
-                Bucket=parts['bucket'])['LocationConstraint']
-            return self.s3_to_https(url_out, region)
+            return self.s3_to_https(url_out, self.get_bucket_region(parts['bucket']))
         else:
             return url_out
 
