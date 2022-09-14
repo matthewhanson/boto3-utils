@@ -204,6 +204,8 @@ class s3(object):
                             suffix=None,
                             start_date=None,
                             end_date=None,
+                            is_latest=None,
+                            key_contains=None,
                             datetime_key='LastModifiedDate'):
         logger.debug('Reading inventory file %s' % (fname))
 
@@ -231,7 +233,23 @@ class s3(object):
                                    "%Y-%m-%dT%H:%M:%S.%fZ").date()
             return True if dt < end_date else False
 
+        def islatest(info):
+            if latest := info.get("IsLatest"):
+                return latest not in ("false", False)
+            return True
+
+        def fcontains(info):
+            for part in key_contains:
+                if part not in info["Key"]:
+                    return False
+            return True
+
         inv = filter(fvalid, inv)
+
+        if is_latest is not None:
+            inv - filter(islatest, inv)
+        if key_contains:
+            inv = filter(fcontains, inv)
         if prefix:
             inv = filter(fprefix, inv)
         if suffix:
@@ -240,30 +258,34 @@ class s3(object):
             inv = filter(fstartdate, inv)
         if end_date:
             inv = filter(fenddate, inv)
+
         for i in inv:
             yield 's3://%s/%s' % (i['Bucket'], i['Key'])
 
-    def latest_inventory_manifest(self, url):
+    def latest_inventory_manifest(self, url, manifest_age_days=1):
         """ Get latest inventory manifest file """
         parts = self.urlparse(url)
         # get latest manifest file
         today = datetime.now()
         manifest_url = None
-        for dt in [today, today - timedelta(1)]:
+        for dt in [today - timedelta(x) for x in range(manifest_age_days)]:
             _key = op.join(parts['key'], dt.strftime('%Y-%m-%d'))
             _url = 's3://%s/%s' % (parts['bucket'], _key)
             manifests = [k for k in self.find(_url, suffix='manifest.json')]
             if len(manifests) == 1:
                 manifest_url = manifests[0]
                 break
+
         if manifest_url:
             return self.read_json(manifest_url)
         else:
             return None
 
-    def latest_inventory_files(self, url):
+    def latest_inventory_files(self, url, manifest=None):
+        if not manifest:
+            manifest = self.latest_inventory_manifest(url)
+
         bucket = self.urlparse(url)['bucket']
-        manifest = self.latest_inventory_manifest(url)
         if manifest:
             files = manifest.get('files', [])
             numfiles = len(files)
@@ -276,7 +298,9 @@ class s3(object):
 
     def latest_inventory(self, url, **kwargs):
         """ Return generator function for objects in Bucket with suffix (all files if suffix=None) """
-        manifest = self.latest_inventory_manifest(url)
+        manifest_age_days = kwargs.pop("manifest_age_days", 1)
+        manifest = self.latest_inventory_manifest(url, manifest_age_days)
+
         # read through latest manifest looking for matches
         if manifest:
             # get file schema
@@ -284,7 +308,7 @@ class s3(object):
                 str(key).strip() for key in manifest['fileSchema'].split(',')
             ]
 
-            for i, url in enumerate(self.latest_inventory_files(url)):
+            for i, url in enumerate(self.latest_inventory_files(url, manifest)):
                 logger.info('Reading inventory file %s' % (i + 1))
                 results = self.read_inventory_file(url, keys, **kwargs)
                 yield from results
