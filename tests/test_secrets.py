@@ -5,7 +5,6 @@ import base64
 from boto3utils import secrets
 from botocore.exceptions import ClientError
 
-
 SECRET_NAME = 'secret'
 SECRET = {'mock_key': 'mock_val'}
 SECRET_STRING = json.dumps(SECRET)

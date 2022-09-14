@@ -96,7 +96,8 @@ class s3(object):
                                    parts['key'],
                                    ExtraArgs=extra)
         if http_url:
-            return self.s3_to_https(url_out, self.get_bucket_region(parts['bucket']))
+            return self.s3_to_https(url_out,
+                                    self.get_bucket_region(parts['bucket']))
         else:
             return url_out
 

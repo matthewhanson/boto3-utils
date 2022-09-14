@@ -1,6 +1,3 @@
-# this must be imported before any boto3 module
-from moto import mock_s3
-
 import boto3
 import os
 import pytest
@@ -26,8 +23,8 @@ def create_test_bucket(s3, bucket):
     s3.create_bucket(**params)
     s3.put_object(Body='helloworld', Bucket=bucket, Key=KEY)
     s3.upload_file(Filename=os.path.join(testpath, 'test.json'),
-                       Bucket=bucket,
-                       Key='test.json')
+                   Bucket=bucket,
+                   Key='test.json')
 
 
 @pytest.fixture

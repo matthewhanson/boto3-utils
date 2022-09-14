@@ -4,8 +4,7 @@ import moto
 import boto3
 import pytest
 
-
-if not 'AWS_DEFAULT_REGION' in os.environ:
+if 'AWS_DEFAULT_REGION' not in os.environ:
     os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 
 
