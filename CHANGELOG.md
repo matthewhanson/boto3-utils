@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- s3.download_with_metadata() downloads a file and returns both the file path and a selection of metadata about the object (e.g. ETag, Version, etc)
+- s3.get_object() takes a new argument, `extra_args={}` that is passed to the underlying client
+- s3.download() takes a new argument, `extra_args={}` that is passed to the underlying client
+- s3.download() parses query parameters from the provided url, adding them  to the `extra_args` passed to the underlying client
+
+### Modified
+- s3.urlparse() now supports query parameters, returning them in the `'query_params'` section of the returned `dict`
+- added `coverage.xml` to `.gitignore`
+
 ## [v0.3.3] - 2022-09-14
 
 ### Added

@@ -12,9 +12,9 @@ from datetime import datetime, timedelta
 from gzip import GzipFile
 from io import BytesIO
 from os import makedirs, getenv
-from shutil import rmtree
+from shutil import rmtree, copyfileobj
 from tempfile import mkdtemp
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
 
@@ -29,22 +29,28 @@ class s3(object):
 
     @classmethod
     def urlparse(cls, url):
-        """ Split S3 URL into bucket, key, filename """
+        """ Split S3 URL into bucket, key, filename, query_params """
         _url = deepcopy(url)
-        if url[0:5] == 'https':
+
+        if url.startswith("https"):
             _url = cls.https_to_s3(url)
-        if _url[0:5] != 's3://':
-            raise Exception('Invalid S3 url %s' % _url)
 
-        url_obj = _url.replace('s3://', '').split('/')
+        if not url.startswith("s3://"):
+            raise Exception(f"Invalid S3 url {_url}")
 
-        # remove empty items
-        url_obj = list(filter(lambda x: x, url_obj))
+        parsed = urlparse(_url)
+        query_params = parse_qs(parsed.query or "")
+
+        # now fix the "list-of-1" to be a straight string
+        for key in query_params:
+            if len(query_params[key]) == 1:
+                query_params[key] = query_params[key][0]
 
         return {
-            'bucket': url_obj[0],
-            'key': '/'.join(url_obj[1:]),
-            'filename': url_obj[-1] if len(url_obj) > 1 else ''
+            "bucket": parsed.netloc,
+            "key": parsed.path.removeprefix("/"),
+            "filename": os.path.basename(parsed.path),
+            "query_params": query_params,
         }
 
     @classmethod
@@ -116,35 +122,87 @@ class s3(object):
         finally:
             rmtree(tmpdir)
 
-    def get_object(self, bucket, key):
+    def get_object(self, bucket, key, extra_args={}):
         """ Get an S3 object """
-        if self.requester_pays:
-            response = self.s3.get_object(Bucket=bucket,
-                                          Key=key,
-                                          RequestPayer='requester')
-        else:
-            response = self.s3.get_object(Bucket=bucket, Key=key)
-        return response
+        extra_args = deepcopy(extra_args or {})
 
-    def download(self, uri, path=''):
+        if self.requester_pays:
+            extra_args["RequestPayer"] = "requester"
+
+        return self.s3.get_object(Bucket=bucket, Key=key, **extra_args)
+
+    def download(self, uri, path='', extra_args={}):
         """
         Download object from S3
         :param uri: URI of object to download
         :param path: Output path
+        :param extra_args: Dictionary of parameters to pass through to the S3 client
         """
         s3_uri = self.urlparse(uri)
         fout = op.join(path, s3_uri['filename'])
         logger.debug("Downloading %s as %s" % (uri, fout))
-        if path != '':
+
+        if path != "":
             makedirs(path, exist_ok=True)
-        extra_args = None
+
+        extra_args = deepcopy(extra_args)
         if self.requester_pays:
-            extra_args = {'RequestPayer': 'requester'}
-        self.s3.download_file(s3_uri['bucket'],
-                              s3_uri['key'],
+            extra_args["RequestPayer"] = "requester"
+
+        if s3_uri["query_params"]:
+            for key in s3_uri["query_params"]:
+                extra_args[key] = s3_uri["query_params"][key]
+
+        self.s3.download_file(s3_uri["bucket"],
+                              s3_uri["key"],
                               fout,
                               ExtraArgs=extra_args)
         return fout
+
+    def download_with_metadata(self,
+                               uri,
+                               path='',
+                               extra_args={}) -> tuple[str, dict]:
+        """Download object from S3.
+
+        :param uri: URI of object to download
+        :param path: Output path
+        :param extra_args: Extra arguments passed to the s3 client.
+        """
+        s3_uri = self.urlparse(uri)
+        fout = os.path.join(path, s3_uri["filename"])
+
+        if path != "":
+            os.makedirs(path, exist_ok=True)
+
+        extra_args = deepcopy(extra_args or {})
+        if self.requester_pays:
+            extra_args["RequestPayer"] = "requester"
+
+        if s3_uri["query_params"]:
+            for key in s3_uri["query_params"]:
+                extra_args[key] = s3_uri["query_params"][key]
+
+        result = self.get_object(s3_uri["bucket"],
+                                 s3_uri["key"],
+                                 extra_args=extra_args)
+
+        # save file
+        with open(fout, "wb") as f:
+            copyfileobj(result["Body"], f)
+
+        # populate metadata dictionary
+        meta = deepcopy(result["Metadata"]) if "Metadata" in result else {}
+        for key in [
+                "LastModified", "Expiration", "ETag", "VersionId",
+                "ContentEncoding", "ContentLanguage", "ContentType", "Expires",
+                "ChecksumCRC32", "ChecksumCRC32C", "ChecksumSHA1",
+                "ChecksumSHA256"
+        ]:
+            if key in result:
+                meta[key] = result[key]
+
+        return (fout, meta)
 
     def read(self, url):
         """ Read object from s3 """
