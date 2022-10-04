@@ -50,7 +50,7 @@ class s3(object):
             "bucket": parsed.netloc,
             "key": parsed.path.removeprefix("/"),
             "filename": os.path.basename(parsed.path),
-            "query_params": query_params,
+            "parameters": query_params,
         }
 
     @classmethod
@@ -131,12 +131,14 @@ class s3(object):
 
         return self.s3.get_object(Bucket=bucket, Key=key, **extra_args)
 
-    def download(self, uri, path='', extra_args={}):
+    def download(self, uri, path='', **kwargs):
         """
         Download object from S3
+
+        Additional keyword parameters will be passed to the underlying client.
+
         :param uri: URI of object to download
         :param path: Output path
-        :param extra_args: Dictionary of parameters to pass through to the S3 client
         """
         s3_uri = self.urlparse(uri)
         fout = op.join(path, s3_uri['filename'])
@@ -145,13 +147,13 @@ class s3(object):
         if path != "":
             makedirs(path, exist_ok=True)
 
-        extra_args = deepcopy(extra_args)
+        extra_args = deepcopy(kwargs) if kwargs else {}
         if self.requester_pays:
             extra_args["RequestPayer"] = "requester"
 
-        if s3_uri["query_params"]:
-            for key in s3_uri["query_params"]:
-                extra_args[key] = s3_uri["query_params"][key]
+        if s3_uri["parameters"]:
+            for key in s3_uri["parameters"]:
+                extra_args[key] = s3_uri["parameters"][key]
 
         self.s3.download_file(s3_uri["bucket"],
                               s3_uri["key"],
@@ -179,9 +181,9 @@ class s3(object):
         if self.requester_pays:
             extra_args["RequestPayer"] = "requester"
 
-        if s3_uri["query_params"]:
-            for key in s3_uri["query_params"]:
-                extra_args[key] = s3_uri["query_params"][key]
+        if s3_uri["parameters"]:
+            for key in s3_uri["parameters"]:
+                extra_args[key] = s3_uri["parameters"][key]
 
         result = self.get_object(s3_uri["bucket"],
                                  s3_uri["key"],

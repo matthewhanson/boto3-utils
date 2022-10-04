@@ -47,7 +47,7 @@ def test_urlparse_params():
     assert (parts['bucket'] == 'bucket')
     assert (parts['key'] == 'path')
     assert (parts['key'] == parts['filename'])
-    assert (parts['query_params'] == {'VersionId': 'yellowbeardthepirate'})
+    assert (parts['parameters'] == {'VersionId': 'yellowbeardthepirate'})
 
 
 def test_urlparse():
@@ -55,7 +55,7 @@ def test_urlparse():
     assert (parts['bucket'] == 'bucket')
     assert (parts['key'] == 'path')
     assert (parts['key'] == parts['filename'])
-    assert (parts['query_params'] == {})
+    assert (parts['parameters'] == {})
 
 
 def test_urlparse_nokey():
@@ -63,7 +63,7 @@ def test_urlparse_nokey():
     assert (parts['bucket'] == 'bucket')
     assert (parts['key'] == '')
     assert (parts['filename'] == '')
-    assert (parts['query_params'] == {})
+    assert (parts['parameters'] == {})
 
 
 def test_urlparse_invalid():
