@@ -131,6 +131,33 @@ class s3(object):
 
         return self.s3.get_object(Bucket=bucket, Key=key, **extra_args)
 
+    def get_object_metadata(self, uri, **kwargs):
+        """
+        Get object metadata attributes.
+
+        Additional keyword arguments are passed to the underlying client.
+
+        :param uri: URI of the object
+        """
+        s3_uri = self.urlparse(uri)
+        logger.debug("Retrieving object attributes for %s", uri)
+
+        extra_args = deepcopy(
+            s3_uri["parameters"]) if "parameters" in s3_uri else {}
+        if kwargs:
+            for k in kwargs:
+                extra_args[k] = kwargs[k]
+
+        response = self.s3.get_object_attributes(
+            Bucket=s3_uri["bucket"],
+            Key=s3_uri["key"],
+            ObjectAttributes=["ETag", "Checksum", "ObjectSize", "ObjectParts"],
+            **extra_args)
+
+        response.pop("ResponseMetadata", None)
+
+        return response
+
     def download(self, uri, path='', **kwargs):
         """
         Download object from S3
