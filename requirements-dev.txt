@@ -9,3 +9,4 @@ recommonmark~=0.7.1
 toml~=0.10.2
 yapf==0.30.*
 moto~=2.0
+importlib-metadata<5.0; python_version < '3.8'

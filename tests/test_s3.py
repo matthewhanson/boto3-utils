@@ -42,11 +42,20 @@ def s3mock_west(s3_west):
 testpath = os.path.dirname(__file__)
 
 
+def test_urlparse_params():
+    parts = s3.urlparse('s3://bucket/path?VersionId=yellowbeardthepirate')
+    assert (parts['bucket'] == 'bucket')
+    assert (parts['key'] == 'path')
+    assert (parts['key'] == parts['filename'])
+    assert (parts['parameters'] == {'VersionId': 'yellowbeardthepirate'})
+
+
 def test_urlparse():
     parts = s3.urlparse('s3://bucket/path')
     assert (parts['bucket'] == 'bucket')
     assert (parts['key'] == 'path')
     assert (parts['key'] == parts['filename'])
+    assert (parts['parameters'] == {})
 
 
 def test_urlparse_nokey():
@@ -54,6 +63,7 @@ def test_urlparse_nokey():
     assert (parts['bucket'] == 'bucket')
     assert (parts['key'] == '')
     assert (parts['filename'] == '')
+    assert (parts['parameters'] == {})
 
 
 def test_urlparse_invalid():
@@ -98,6 +108,42 @@ def test_upload_download(s3mock):
     fname = s3().download(url, path)
     assert (os.path.exists(fname))
     assert (os.path.join(path, os.path.basename(url)) == fname)
+    rmtree(path)
+
+
+def test_upload_getobject(s3mock):
+    # upload the object
+    url = 's3://%s/mytestfile' % BUCKET
+    s3().upload(__file__, url, public=True)
+    exists = s3().exists(url)
+    assert (exists)
+
+    obj1 = s3().get_object(BUCKET, "mytestfile")
+
+    obj2 = s3().get_object(BUCKET,
+                           "mytestfile",
+                           extra_args={'IfMatch': obj1['ETag']})
+
+    assert obj1['ETag'] == obj2['ETag']
+    assert obj1['ContentLength'] == obj2['ContentLength']
+
+
+def test_upload_download_parameters(s3mock):
+    # upload the file
+    url = 's3://%s/mytestfile' % BUCKET
+    s3().upload(__file__, url, public=True)
+    exists = s3().exists(url)
+    assert (exists)
+
+    # download the with metadata
+    path = os.path.join(testpath, 'test_s3/test_upload_download')
+    fname, meta = s3().download_with_metadata(
+        url, path, extra_args={"ChecksumMode": "Enabled"})
+    assert (os.path.exists(fname))
+    assert (os.path.join(path, os.path.basename(url)) == fname)
+    assert 'ETag' in meta
+    assert 'binary/octet-stream' == meta['ContentType']
+    assert 'LastModified' in meta
     rmtree(path)
 
 
