@@ -49,7 +49,7 @@ class S3Inventory(object):
 
     def inventory_file_hrefs(self, outpath: str = None):
         bucket = self.s3client.urlparse(self.href)['bucket']
-        
+
         files = self.manifest.get('files', [])
         numfiles = len(files)
         logger.info(f"{numfiles} inventory files")
@@ -78,16 +78,16 @@ class S3Inventory(object):
 
     @classmethod
     def filter_inventory_file(cls,
-                            fname,
-                            schema,
-                            prefix=None,
-                            suffix=None,
-                            start_date=None,
-                            end_date=None,
-                            is_latest=None,
-                            key_contains=None,
-                            datetime_key='LastModifiedDate',
-                            s3client: "s3" = s3()):
+                              fname,
+                              schema,
+                              prefix=None,
+                              suffix=None,
+                              start_date=None,
+                              end_date=None,
+                              is_latest=None,
+                              key_contains=None,
+                              datetime_key='LastModifiedDate',
+                              s3client: "s3" = s3()):
         inv = cls.read_inventory_file(fname, schema, s3client=s3client)
 
         def fvalid(info):
@@ -176,7 +176,7 @@ class S3Inventory(object):
 
 if __name__ == "__main__":
     logging.basicConfig(level='INFO', format="%(asctime)s [%(levelname)8s] %(message)s")
-    inv = S3Inventory("s3://sentinel-inventory/sentinel-s2-l2a/sentinel-s2-l2a-inventory", date = '2022-10-31')
+    inv = S3Inventory("s3://sentinel-inventory/sentinel-s2-l2a/sentinel-s2-l2a-inventory", date='2022-10-31')
     hrefs = inv.inventory_file_hrefs()
     num_files = len(hrefs)
     filters = {

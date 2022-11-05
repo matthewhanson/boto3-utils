@@ -4,9 +4,10 @@ from boto3utils.s3inventory import S3Inventory
 
 DATE = '2022-10-31'
 
+
 @pytest.fixture
 def test_inventory():
-    inv = S3Inventory("s3://sentinel-inventory/sentinel-s2-l2a/sentinel-s2-l2a-inventory", date = DATE)
+    inv = S3Inventory("s3://sentinel-inventory/sentinel-s2-l2a/sentinel-s2-l2a-inventory", date=DATE)
     yield inv
 
 
