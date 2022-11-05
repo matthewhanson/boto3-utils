@@ -11,15 +11,21 @@ logger = logging.getLogger(__name__)
 
 
 class S3Inventory(object):
-
-    def __init__(self, href, date: str = datetime.now(), max_age: int = 5, **kwargs):
+    def __init__(self,
+                 href,
+                 date: str = datetime.now(),
+                 max_age: int = 5,
+                 **kwargs):
 
         self.href = href
         self.s3client = s3(**kwargs)
 
         self.datetime = parse(date) if isinstance(date, str) else date
 
-        self.manifest = self.read_manifest(href, self.datetime, max_age=max_age, s3client=self.s3client)
+        self.manifest = self.read_manifest(href,
+                                           self.datetime,
+                                           max_age=max_age,
+                                           s3client=self.s3client)
 
         # get file schema
         self.schema = [
@@ -27,7 +33,11 @@ class S3Inventory(object):
         ]
 
     @classmethod
-    def read_manifest(cls, href: str, date: datetime = datetime.now(), max_age: int = 1, s3client: "s3" = None):
+    def read_manifest(cls,
+                      href: str,
+                      date: datetime = datetime.now(),
+                      max_age: int = 1,
+                      s3client: "s3" = None):
         """ Get latest inventory manifest file """
         if s3client is None:
             s3client = s3()
@@ -40,7 +50,9 @@ class S3Inventory(object):
         for dt in [date - timedelta(x) for x in range(max_age)]:
             _key = Path(parts['key']) / dt.strftime('%Y-%m-%d')
             _href = 's3://%s/%s' % (parts['bucket'], _key)
-            manifests = [k for k in s3client.find(_href, suffix='manifest.json')]
+            manifests = [
+                k for k in s3client.find(_href, suffix='manifest.json')
+            ]
             if len(manifests) == 1:
                 url = manifests[0]
                 manifest = s3client.read_json(url)
@@ -57,7 +69,10 @@ class S3Inventory(object):
         return ['s3://%s/%s' % (bucket, f['key']) for f in files]
 
     @classmethod
-    def read_inventory_file(cls, fname, schema, s3client: Optional["s3"] = None):
+    def read_inventory_file(cls,
+                            fname,
+                            schema,
+                            s3client: Optional["s3"] = None):
         logger.debug('Reading inventory file %s' % (fname))
 
         inv = [{
@@ -68,7 +83,12 @@ class S3Inventory(object):
         return inv
 
     @classmethod
-    def save_inventory_file(cls, fname, schema, s3client, outpath: str = '', overwrite=False):
+    def save_inventory_file(cls,
+                            fname,
+                            schema,
+                            s3client,
+                            outpath: str = '',
+                            overwrite=False):
         fout = Path(outpath, Path(fname).stem)
         if not fout.exists() or overwrite:
             inv = cls.read_inventory_file(fname, schema, s3client)
@@ -175,18 +195,22 @@ class S3Inventory(object):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level='INFO', format="%(asctime)s [%(levelname)8s] %(message)s")
-    inv = S3Inventory("s3://sentinel-inventory/sentinel-s2-l2a/sentinel-s2-l2a-inventory", date='2022-10-31')
+    logging.basicConfig(level='INFO',
+                        format="%(asctime)s [%(levelname)8s] %(message)s")
+    inv = S3Inventory(
+        "s3://sentinel-inventory/sentinel-s2-l2a/sentinel-s2-l2a-inventory",
+        date='2022-10-31')
     hrefs = inv.inventory_file_hrefs()
     num_files = len(hrefs)
-    filters = {
-        "suffix": "tileInfo.json"
-    }
+    filters = {"suffix": "tileInfo.json"}
     total = 0
     for i, fname in enumerate(hrefs):
         logger.info(f"Reading inventory file {i+1}/{num_files}")
         filenames = []
-        finv = inv.filter_inventory_file(fname, inv.schema, s3client=inv.s3client, **filters)
+        finv = inv.filter_inventory_file(fname,
+                                         inv.schema,
+                                         s3client=inv.s3client,
+                                         **filters)
         for f in finv:
             filenames.append(f)
         total += len(filenames)
