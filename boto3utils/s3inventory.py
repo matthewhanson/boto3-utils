@@ -203,10 +203,7 @@ if __name__ == "__main__":
         date='2022-10-31')
     hrefs = inv.inventory_file_hrefs()
     num_files = len(hrefs)
-    filters = {
-        "suffix": "tileInfo.json",
-        "key_contains": "XC/2022/8/17"
-    }
+    filters = {"suffix": "tileInfo.json"}
     total = 0
     for i, fname in enumerate(hrefs):
         logger.info(f"Reading inventory file {i+1}/{num_files}: {fname}")
