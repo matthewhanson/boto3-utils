@@ -5,6 +5,7 @@ import hmac
 import logging
 import os
 import os.path as op
+from typing import Tuple
 
 from botocore.exceptions import ClientError
 from copy import deepcopy
@@ -191,7 +192,7 @@ class s3(object):
     def download_with_metadata(self,
                                uri,
                                path='',
-                               extra_args={}) -> tuple[str, dict]:
+                               extra_args={}) -> Tuple[str, dict]:
         """Download object from S3.
 
         :param uri: URI of object to download
