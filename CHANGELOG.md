@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - s3.get_object() takes a new argument, `extra_args={}` that is passed to the underlying client
 - s3.download() takes a new argument, `extra_args={}` that is passed to the underlying client
 - s3.download() parses query parameters from the provided url, adding them  to the `extra_args` passed to the underlying client
+- S3Inventory class to replace the functions (to be deprecated) in the s3 module for using S3 Inventories
 
 ### Modified
 - s3.urlparse() now supports query parameters, returning them in the `'query_params'` section of the returned `dict`
