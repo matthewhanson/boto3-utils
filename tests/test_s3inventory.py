@@ -13,13 +13,13 @@ def test_inventory():
     yield inv
 
 
-def test_init_s3inventory(test_inventory):
+def _test_init_s3inventory(test_inventory):
     assert (test_inventory.manifest['datetime'].startswith(DATE))
     assert (test_inventory.manifest['creationTimestamp'] == '1667178000000')
     assert (test_inventory.manifest['sourceBucket'] == 'sentinel-s2-l2a')
     assert (len(test_inventory.manifest['files']) == 1258)
 
 
-def test_inventory_files(test_inventory):
+def _test_inventory_files(test_inventory):
     filenames = test_inventory.inventory_file_hrefs()
     assert (len(filenames) == 1258)
