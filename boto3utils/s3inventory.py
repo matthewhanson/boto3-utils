@@ -156,6 +156,7 @@ class S3Inventory(object):
         if end_date:
             inv = filter(fenddate, inv)
 
+        _i = -1
         for _i, i in enumerate(inv):
             yield 's3://%s/%s' % (i['Bucket'], i['Key'])
         logger.info(f"Matched {_i+1} files")
@@ -202,10 +203,13 @@ if __name__ == "__main__":
         date='2022-10-31')
     hrefs = inv.inventory_file_hrefs()
     num_files = len(hrefs)
-    filters = {"suffix": "tileInfo.json"}
+    filters = {
+        "suffix": "tileInfo.json",
+        "key_contains": "XC/2022/8/17"
+    }
     total = 0
     for i, fname in enumerate(hrefs):
-        logger.info(f"Reading inventory file {i+1}/{num_files}")
+        logger.info(f"Reading inventory file {i+1}/{num_files}: {fname}")
         filenames = []
         finv = inv.filter_inventory_file(fname,
                                          inv.schema,
