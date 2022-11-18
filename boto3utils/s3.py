@@ -79,8 +79,10 @@ class s3(object):
             kwargs = {}
             if self.requester_pays:
                 kwargs["RequestPayer"] = "requester"
-            
-            self.s3.head_object(Bucket=parts['bucket'], Key=parts['key'], **kwargs)
+
+            self.s3.head_object(Bucket=parts['bucket'],
+                                Key=parts['key'],
+                                **kwargs)
             return True
         except ClientError as exc:
             if exc.response['Error']['Code'] != '404':
