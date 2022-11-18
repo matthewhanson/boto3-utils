@@ -76,7 +76,13 @@ class s3(object):
         """ Check if this URL exists on S3 """
         parts = self.urlparse(url)
         try:
-            self.s3.head_object(Bucket=parts['bucket'], Key=parts['key'])
+            kwargs = {}
+            if self.requester_pays:
+                kwargs["RequestPayer"] = "requester"
+
+            self.s3.head_object(Bucket=parts['bucket'],
+                                Key=parts['key'],
+                                **kwargs)
             return True
         except ClientError as exc:
             if exc.response['Error']['Code'] != '404':
@@ -148,6 +154,8 @@ class s3(object):
         if kwargs:
             for k in kwargs:
                 extra_args[k] = kwargs[k]
+        if self.requester_pays:
+            extra_args["RequestPayer"] = "requester"
 
         response = self.s3.get_object_attributes(
             Bucket=s3_uri["bucket"],
@@ -237,7 +245,10 @@ class s3(object):
     def read(self, url):
         """ Read object from s3 """
         parts = self.urlparse(url)
-        response = self.get_object(parts['bucket'], parts['key'])
+        kwargs = {}
+        if self.requester_pays:
+            kwargs["RequestPayer"] = "requester"
+        response = self.get_object(parts['bucket'], parts['key'], **kwargs)
         body = response['Body'].read()
         if op.splitext(parts['key'])[1] == '.gz':
             body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
@@ -268,6 +279,9 @@ class s3(object):
         # do the filtering directly in the S3 API.
         if isinstance(parts['key'], str):
             kwargs['Prefix'] = parts['key']
+
+        if self.requester_pays:
+            kwargs["RequestPayer"] = "requester"
 
         while True:
             # The S3 API response is a large blob of metadata.
