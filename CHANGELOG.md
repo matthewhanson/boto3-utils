@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v0.3.4] - 2022-11-18
+## [v0.4.0] - 2022-11-18
 
 ### Added
 - s3.download_with_metadata() downloads a file and returns both the file path and a selection of metadata about the object (e.g. ETag, Version, etc)
@@ -125,8 +125,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 Initial Release
 
-[Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/0.3.4...main
-[v0.3.4]: https://github.com/matthewhanson/boto3-utils/compare/0.3.3...0.3.4
+[Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/0.4.0...main
+[v0.4.0]: https://github.com/matthewhanson/boto3-utils/compare/0.3.3...0.4.0
 [v0.3.3]: https://github.com/matthewhanson/boto3-utils/compare/0.3.2...0.3.3
 [v0.3.2]: https://github.com/matthewhanson/boto3-utils/compare/0.3.1...0.3.2
 [v0.3.1]: https://github.com/matthewhanson/boto3-utils/compare/0.3.0...0.3.1
