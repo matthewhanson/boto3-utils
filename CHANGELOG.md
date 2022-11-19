@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.4.1] - 2022-11-19
+
+### Fixed
+- requester pays or other additional parameters using boto3 get_object
+
 ## [v0.4.0] - 2022-11-18
 
 ### Added
@@ -125,7 +130,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 Initial Release
 
-[Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/0.4.0...main
+[Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/0.4.1...main
+[v0.4.1]: https://github.com/matthewhanson/boto3-utils/compare/0.3.3...0.4.1
 [v0.4.0]: https://github.com/matthewhanson/boto3-utils/compare/0.3.3...0.4.0
 [v0.3.3]: https://github.com/matthewhanson/boto3-utils/compare/0.3.2...0.3.3
 [v0.3.2]: https://github.com/matthewhanson/boto3-utils/compare/0.3.1...0.3.2
