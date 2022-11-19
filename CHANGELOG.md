@@ -6,12 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.3.4] - 2022-11-18
+
 ### Added
 - s3.download_with_metadata() downloads a file and returns both the file path and a selection of metadata about the object (e.g. ETag, Version, etc)
 - s3.get_object() takes a new argument, `extra_args={}` that is passed to the underlying client
 - s3.download() takes a new argument, `extra_args={}` that is passed to the underlying client
 - s3.download() parses query parameters from the provided url, adding them  to the `extra_args` passed to the underlying client
-- S3Inventory class to replace the functions (to be deprecated) in the s3 module for using S3 Inventories
+- Draft S3Inventory class to replace the functions (to be deprecated) in the s3 module for using S3 Inventories
 - s3.exists(), s3.find(), and s3.get_object_metadata() now support requester pays
 
 ### Modified
@@ -123,7 +125,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 Initial Release
 
-[Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/0.3.2...main
+[Unreleased]: https://github.com/matthewhanson/boto3-utils/compare/0.3.4...main
+[v0.3.4]: https://github.com/matthewhanson/boto3-utils/compare/0.3.3...0.3.4
+[v0.3.3]: https://github.com/matthewhanson/boto3-utils/compare/0.3.2...0.3.3
 [v0.3.2]: https://github.com/matthewhanson/boto3-utils/compare/0.3.1...0.3.2
 [v0.3.1]: https://github.com/matthewhanson/boto3-utils/compare/0.3.0...0.3.1
 [v0.3.0]: https://github.com/matthewhanson/boto3-utils/compare/0.2.3...0.3.0
