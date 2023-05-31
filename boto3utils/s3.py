@@ -248,7 +248,9 @@ class s3(object):
         kwargs = {}
         if self.requester_pays:
             kwargs["RequestPayer"] = "requester"
-        response = self.get_object(parts['bucket'], parts['key'], extra_args=kwargs)
+        response = self.get_object(parts['bucket'],
+                                   parts['key'],
+                                   extra_args=kwargs)
         body = response['Body'].read()
         if op.splitext(parts['key'])[1] == '.gz':
             body = GzipFile(None, 'rb', fileobj=BytesIO(body)).read()
