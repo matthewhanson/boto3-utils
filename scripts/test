@@ -17,24 +17,17 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     if [ "${1:-}" = "--help" ]; then
         usage
     else
-        # Lint
-        flake8 boto3utils tests
+        ./scripts/lint
+        ./scripts/format
 
-        # Code formatting
-        yapf -dpr boto3utils tests
-
-        # Code spelling
         codespell -I .codespellignore -f \
-            boto3utils/*.py boto3utils/**/*.py \
-            tests/*.py tests/**/*.py \
-            docs/*.rst docs/**/*.rst \
-            docs/*.ipynb docs/**/*.ipynb \
             scripts/* \
-            *.py \
-            *.md
+            *.py ./**/*.py \
+            *.md \
+            docs/*.rst docs/**/*.rst \
+            docs/*.ipynb docs/**/*.ipynb
 
-        # Test suite with coverage enabled
-        pytest -s --cov boto3utils --cov-report term-missing
+        pytest --cov=boto3utils tests/
         coverage xml
     fi
 fi
