@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- boto3utils.s3 object now supports specifying the `endpoint_url` parameter
+  for the underlying boto3 client
+
 ## [v0.4.1] - 2022-11-19
 
 ### Fixed
