@@ -188,3 +188,10 @@ def test_latest_inventory():
     #    hours = (datetime.today() - dt).seconds // 3600
     #    assert(hours < 24)
     #    break
+
+
+def test_upload_download_with_custom_endpoint(s3_custom_endpoint):
+    create_test_bucket(s3_custom_endpoint, BUCKET)
+    url = "s3://%s/mytestfile" % BUCKET
+    s3(endpoint_url="http://my-s3").upload(__file__, url, public=True)
+    assert s3(endpoint_url="http://my-s3").exists(url)

@@ -32,6 +32,13 @@ def s3_west(aws_credentials):
 
 
 @pytest.fixture
+def s3_custom_endpoint(aws_credentials):
+    os.environ["MOTO_S3_CUSTOM_ENDPOINTS"] = "http://my-s3"
+    with moto.mock_s3():
+        yield boto3.client("s3", endpoint_url="http://my-s3")
+
+
+@pytest.fixture
 def secretsmanager(aws_credentials):
     with moto.mock_secretsmanager():
         yield boto3.client("secretsmanager", region_name="us-east-1")
