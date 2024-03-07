@@ -4,10 +4,10 @@ import json
 
 
 def get_secret(secret_name):
-    """ Get secrets as a dictionary from Secrets Manager """
+    """Get secrets as a dictionary from Secrets Manager"""
     # Create a Secrets Manager client
     session = boto3.session.Session()
-    client = session.client(service_name='secretsmanager')
+    client = session.client(service_name="secretsmanager")
 
     # Will throw a botocore.exceptions.ClientError for any of
     # the specific exceptions for the 'GetSecretValue' API.
@@ -17,9 +17,9 @@ def get_secret(secret_name):
 
     # Decrypts secret using the associated KMS CMK.
     # Depending on whether the secret is a string or binary, one of these fields will be populated.
-    if 'SecretString' in get_secret_value_response:
-        secret = get_secret_value_response['SecretString']
+    if "SecretString" in get_secret_value_response:
+        secret = get_secret_value_response["SecretString"]
     else:
-        secret = base64.b64decode(get_secret_value_response['SecretBinary'])
+        secret = base64.b64decode(get_secret_value_response["SecretBinary"])
 
     return json.loads(secret)

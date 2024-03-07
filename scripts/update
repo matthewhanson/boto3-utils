@@ -9,17 +9,16 @@ fi
 function usage() {
     echo -n \
         "Usage: $(basename "$0")
-Format code with black
+Install requirements for all packages and development.
 "
 }
-
-DIRS_TO_CHECK=("src" "tests")
 
 if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     if [ "${1:-}" = "--help" ]; then
         usage
     else
-        # Code formatting
-        pre-commit run black --all-files
+        python -m pip install --upgrade pip
+        pip install .
+        pip install -r requirements-dev.txt
     fi
 fi
