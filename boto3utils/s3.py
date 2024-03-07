@@ -5,7 +5,7 @@ import hmac
 import logging
 import os
 import os.path as op
-from typing import Tuple
+from typing import Tuple, Optional
 
 from botocore.exceptions import ClientError
 from copy import deepcopy
@@ -21,12 +21,17 @@ logger = logging.getLogger(__name__)
 
 
 class s3(object):
-    def __init__(self, session=None, requester_pays=False):
+    def __init__(
+        self,
+        session: boto3.Session = None,
+        requester_pays: bool = False,
+        endpoint_url: Optional[str] = None,
+    ):
         self.requester_pays = requester_pays
         if session is None:
-            self.s3 = boto3.client("s3")
+            self.s3 = boto3.client("s3", endpoint_url=endpoint_url)
         else:
-            self.s3 = session.client("s3")
+            self.s3 = session.client("s3", endpoint_url=endpoint_url)
 
     @classmethod
     def urlparse(cls, url):
